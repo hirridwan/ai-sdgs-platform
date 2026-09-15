@@ -290,7 +290,7 @@ export default function App() {
           label="Catatan eksplorasimu"
           isTextarea
           value={exploration}
-          onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setExploration(event.target.value)}
+          onChange={(event) => setExploration(event.target.value)}
           placeholder="Tulis hasil eksplorasi, data, atau pernyataan yang ingin kamu periksa. Contoh: 'Sebanyak ...% rumah tangga ...'"
         />
 
