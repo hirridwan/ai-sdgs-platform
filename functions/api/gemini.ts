@@ -67,8 +67,9 @@ function parseJson<T>(text: string): T {
     .replace(/^```(?:json)?/i, '')
     .replace(/```$/i, '')
     .trim();
-  const start = Math.min(...[cleaned.indexOf('{'), cleaned.indexOf('[')].filter((v) => v >= 0));
-  if (!Number.isFinite(start)) throw new Error('Model tidak mengembalikan JSON.');
+  const starts = [cleaned.indexOf('{'), cleaned.indexOf('[')].filter((v) => v >= 0);
+  if (!starts.length) throw new Error('Model tidak mengembalikan JSON.');
+  const start = Math.min(...starts);
   return JSON.parse(cleaned.slice(start));
 }
 
@@ -152,6 +153,7 @@ async function generateContent(params: {
   prompt: string;
   grounded: boolean;
   structured: boolean;
+  maxOutputTokens?: number;
 }) {
   const apiKey = params.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -163,7 +165,7 @@ async function generateContent(params: {
     contents: [{ role: 'user', parts: [{ text: params.prompt }] }],
     generationConfig: {
       temperature: params.structured ? 0.1 : 0.4,
-      maxOutputTokens: params.structured ? 9000 : 1200,
+      maxOutputTokens: params.maxOutputTokens ?? (params.structured ? 9000 : 1200),
     },
   };
 
@@ -284,6 +286,47 @@ KELUARKAN HANYA JSON ARRAY sesuai schema.
   });
 }
 
+async function exploreIssue(context: any, payload: any) {
+  const title = String(payload?.title || 'isu SDGs');
+  const sdg = String(payload?.sdg || '');
+
+  const prompt = `
+Anda adalah AI Explorer untuk pembelajaran siswa SMA pada proyek AI × SDGs.
+
+Tujuan Anda BUKAN membuat argumen debat dan BUKAN menentukan benar/salah sebuah klaim. Tugas Anda adalah membantu siswa memahami isu sebagai titik awal penelitian.
+
+ISU:
+${title} (${sdg})
+
+TULIS JAWABAN YANG LENGKAP DAN SELESAI. Jangan berhenti di tengah kalimat. Jangan memulai kalimat baru jika Anda tidak memiliki cukup ruang untuk menyelesaikannya.
+
+Gunakan struktur berikut, dengan judul singkat dan paragraf/bullet yang mudah dibaca:
+1. Konteks isu — jelaskan masalah secara umum tanpa angka spesifik yang tidak perlu.
+2. Faktor yang mungkin terkait — jelaskan 3–5 faktor yang layak diteliti.
+3. Kelompok yang terdampak — sebutkan siapa yang perlu diperhatikan.
+4. Berbagai sudut pandang — minimal sudut pandang pemerintah, masyarakat, dan lingkungan/keberlanjutan.
+5. Pertanyaan pemantik — berikan 4 pertanyaan yang membantu siswa mencari bukti.
+6. Catatan fact-check — tutup dengan satu pengingat bahwa informasi ini adalah titik awal dan setiap klaim/data harus diperiksa dengan sumber terpercaya sebelum digunakan dalam debat.
+
+BATASAN:
+- Maksimal sekitar 450 kata.
+- Gunakan bahasa Indonesia yang jelas dan sesuai siswa SMA.
+- Jangan memberikan naskah debat jadi.
+- Jangan menyajikan angka/statistik seolah sudah terverifikasi jika tidak sedang melakukan pencarian sumber.
+- Pastikan seluruh jawaban diakhiri dengan kalimat yang lengkap.
+`.trim();
+
+  const { text } = await generateContent({
+    env: context.env,
+    prompt,
+    grounded: false,
+    structured: false,
+    maxOutputTokens: 2200,
+  });
+
+  return text;
+}
+
 export async function onRequestPost(context: any) {
   try {
     const requestData = await context.request.json();
@@ -302,8 +345,11 @@ export async function onRequestPost(context: any) {
     if (!apiKey) return json({ error: 'GEMINI_API_KEY belum diatur di environment Cloudflare Pages.' }, 500);
 
     let prompt = '';
+    let maxOutputTokens = 1200;
+
     if (action === 'explore') {
-      prompt = `Berperan sebagai AI Explorer pendidikan. Jelaskan isu SDGs berikut dengan singkat, berikan konteks awal, 2 pertanyaan pemantik, dan sarankan jenis sumber primer yang sebaiknya dicari siswa. Isu: ${payload?.title || ''} (${payload?.sdg || ''}). Maksimal 3 paragraf.`;
+      const result = await exploreIssue(context, payload || {});
+      return json({ result }, 200);
     } else if (action === 'reviewArgument') {
       prompt = `Review argumen debat berikut. Klaim: "${payload?.claim || ''}". Alasan: "${payload?.reason || ''}". Bukti: "${payload?.evidence || ''}". Berikan kritik konstruktif tentang relevansi bukti, lompatan logika, konteks yang hilang, dan cara memperbaikinya. Maksimal 3 paragraf.`;
     } else if (action === 'debate') {
@@ -319,6 +365,7 @@ export async function onRequestPost(context: any) {
       prompt,
       grounded: false,
       structured: false,
+      maxOutputTokens,
     });
 
     return json({ result: text }, 200);

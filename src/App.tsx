@@ -281,7 +281,7 @@ export default function App() {
 
         <div className="bg-ink-2 border border-line border-l-[3px] border-l-teal rounded-r-[14px] p-4 mb-6">
           <div className="font-mono text-[11px] text-teal uppercase mb-1.5">AI · Explorer</div>
-          <p className="m-0 text-sm leading-relaxed text-paper">
+          <p className="m-0 text-sm leading-relaxed text-paper whitespace-pre-line">
             {loading ? 'AI sedang menyiapkan pertanyaan pemantik...' : aiReply}
           </p>
         </div>
