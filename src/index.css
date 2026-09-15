@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-ink text-paper font-body min-h-screen m-0 p-0;
+  }
+}
+
+/* Kustomisasi khusus untuk garis vertikal stepper yang sulit di-handle murni dengan utility class */
+.stepper-line::before {
+  content: "";
+  position: absolute;
+  left: 50%; top: 56px; bottom: 56px;
+  width: 2px;
+  background: theme('colors.line');
+  transform: translateX(-50%);
+  z-index: 0;
+}
+@media (max-width: 760px) {
+  .stepper-line::before { display: none; }
+}
