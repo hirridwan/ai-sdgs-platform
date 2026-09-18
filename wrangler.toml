@@ -2,5 +2,4 @@ name = "ai-sdgs-platform"
 pages_build_output_dir = "./dist"
 
 [placement]
-mode = "targeted"
-region = "gcp:us-east4"
+mode = "smart"
