@@ -773,7 +773,7 @@ export default function App() {
   }
 
   async function callAPI(action: string, payload: unknown) {
-    const response = await fetch('/api/ai/gemini', {
+    const response = await fetch('/api/gemini-ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, payload }),
