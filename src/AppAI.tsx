@@ -1253,13 +1253,13 @@ export default function App() {
             </div>
             <div className="min-w-0 max-md:hidden">
               <div className="font-display text-sm font-semibold tracking-[-0.01em]">AI × SDGs</div>
-              <div className="mt-0.5 text-[11px] text-[#8A8EA2]">AI Research Mode</div>
+              <div className="mt-0.5 text-[11px] text-[#8A8EA2]">AI Knowledge Mode</div>
             </div>
           </div>
 
           <div className="mb-6 rounded-[18px] bg-[#F7F5FF] px-4 py-3.5 max-md:hidden">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6C5CE7]">Web Search</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6C5CE7]">AI Knowledge</span>
               <span className="h-2 w-2 rounded-full bg-[#6C5CE7] shadow-[0_0_0_4px_rgba(108,92,231,0.10)]" />
             </div>
             <p className="mt-2 text-[11px] leading-5 text-[#73778D]">Sumber dicari langsung oleh AI dari internet.</p>
@@ -1327,7 +1327,7 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <span className="font-display text-sm font-semibold tracking-[-0.01em]">AI × SDGs Platform</span>
                 <span className="hidden h-1 w-1 rounded-full bg-[#C7C9D4] sm:block" />
-                <span className="hidden text-[11px] font-medium text-[#8A8EA2] sm:block">Research Mode</span>
+                <span className="hidden text-[11px] font-medium text-[#8A8EA2] sm:block">AI Mode</span>
               </div>
               <div className="mt-1 truncate text-[11px] text-[#8A8EA2]">
                 {selectedIssue ? selectedIssue.title : 'Eksplorasi isu dan bukti berbasis web'}
@@ -1335,7 +1335,7 @@ export default function App() {
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <div className="hidden rounded-full border border-[#E6E7EF] bg-[#FAFAFC] px-3 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-[#777B90] sm:block">Live Web</div>
+              <div className="hidden rounded-full border border-[#E6E7EF] bg-[#FAFAFC] px-3 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-[#777B90] sm:block">Gemini AI</div>
               <div className="rounded-full bg-[#6C5CE7] px-3.5 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-white shadow-[0_6px_14px_rgba(108,92,231,0.18)]">Tahap {String(currentStage).padStart(2,'0')}</div>
             </div>
           </header>
