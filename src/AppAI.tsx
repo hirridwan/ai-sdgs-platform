@@ -58,7 +58,7 @@ const STAGES: { id: StageId; label: string; short: string }[] = [
   { id: 'impact', label: 'Impact', short: '07' },
 ];
 
-const FACT_CHECK_MODE: 'web-search' | 'dummy' = 'web-search';
+const FACT_CHECK_MODE: 'ai-knowledge' | 'dummy' = 'ai-knowledge';
 
 const AI_STAGE_MODE: 'api' | 'dummy' = 'api';
 
@@ -1021,9 +1021,9 @@ export default function App() {
               <strong>MODE SIMULASI:</strong> hasil belum merupakan verifikasi web nyata. Gunakan tahap ini untuk menguji alur klaim → verdict → sumber → Argument Builder.
             </div>
           )}
-          {FACT_CHECK_MODE === 'web-search' && (
+          {FACT_CHECK_MODE === 'ai-knowledge' && (
             <div className="bg-[#6C5CE7]/6 border border-[#6C5CE7]/15 rounded-[20px] p-4 mb-6 text-sm leading-6 text-[#1D2030]">
-              <strong>MODE WEB SEARCH:</strong> AI mencari sumber dari internet secara langsung menggunakan Google Search grounding.
+              <strong>MODE AI KNOWLEDGE:</strong> Gemini menilai klaim berdasarkan pengetahuan internal model. Hasil ini merupakan penilaian awal dan fakta penting tetap perlu diverifikasi dengan sumber eksternal.
             </div>
           )}
 
@@ -1073,7 +1073,7 @@ export default function App() {
                   {claim.caveat && <div className="bg-[#F2A93B]/10 border border-[#F2A93B]/20 rounded-[10px] p-3 mt-3 text-sm leading-relaxed"><strong>Catatan konteks:</strong> {claim.caveat}</div>}
                   {claim.sources.length > 0 && (
                     <div className="mt-4">
-                      <div className="font-mono text-[10px] text-[#6C5CE7] uppercase tracking-[0.16em] mb-2">{FACT_CHECK_MODE === 'dummy' ? 'Referensi simulasi' : 'Referensi hasil web'}</div>
+                      <div className="font-mono text-[10px] text-[#6C5CE7] uppercase tracking-[0.16em] mb-2">{FACT_CHECK_MODE === 'dummy' ? 'Referensi simulasi' : 'Penilaian AI'}</div>
                       <div className="space-y-2">
                         {claim.sources.map((source) => (
                           <a key={`${claim.id}-${source.url}`} href={source.url} target="_blank" rel="noreferrer" className="block bg-[#F6F7FB]/70 border border-[#E6E7EF] rounded-[16px] p-4 hover:border-[#6C5CE7]/60 hover:bg-white/80 transition-colors">
