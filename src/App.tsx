@@ -16,6 +16,11 @@ type Issue = {
   sdg: string;
   title: string;
   blurb: string;
+  motion: string;
+  context: string;
+  proFocus: string;
+  contraFocus: string;
+  starterQuestions: string[];
   sources: Source[];
 };
 
@@ -67,6 +72,11 @@ const SAMPLE_ISSUES: Issue[] = [
     sdg: 'SDG 6',
     title: 'Krisis Air Bersih di Wilayah Perkotaan Padat',
     blurb: 'Akses air bersih tidak merata di permukiman padat penduduk.',
+    motion: 'Pemerintah harus memprioritaskan pemerataan akses layanan air minum bagi permukiman padat perkotaan.',
+    context: 'Pertumbuhan kota dapat meningkatkan kebutuhan air, sementara akses terhadap layanan air minum belum selalu merata. Isu ini mempertemukan kepentingan pemerataan layanan, keterjangkauan, infrastruktur, dan keberlanjutan sumber air.',
+    proFocus: 'Telusuri bukti tentang ketimpangan akses, kelompok yang tertinggal, serta manfaat memprioritaskan wilayah yang belum terlayani.',
+    contraFocus: 'Telusuri keterbatasan kebijakan prioritas, efektivitas alternatif, biaya, dan faktor lain yang dapat memengaruhi akses air.',
+    starterQuestions: ['Siapa yang paling tertinggal dalam akses layanan air di kota?', 'Apa faktor utama yang menjelaskan ketimpangan akses?', 'Apakah perluasan jaringan selalu menjadi solusi paling efektif?'],
     sources: [
       {
         title: 'WHO — Drinking-water',
@@ -91,6 +101,11 @@ const SAMPLE_ISSUES: Issue[] = [
     sdg: 'SDG 13',
     title: 'Kenaikan Suhu & Banjir Rob Pesisir',
     blurb: 'Perubahan iklim mempercepat risiko pesisir dan banjir di kota pesisir.',
+    motion: 'Kota pesisir harus memprioritaskan kebijakan adaptasi banjir rob sebelum memperluas pembangunan di kawasan pesisir yang berisiko.',
+    context: 'Kota pesisir menghadapi risiko banjir rob, kenaikan muka laut, dan kerentanan infrastruktur. Kebijakan kota perlu menimbang keselamatan, ekonomi, tata ruang, dan keberlanjutan wilayah pesisir.',
+    proFocus: 'Cari bukti tentang risiko banjir rob, kerugian sosial-ekonomi, dan alasan mengapa adaptasi perlu menjadi prioritas.',
+    contraFocus: 'Cari bukti tentang kebutuhan pembangunan, biaya adaptasi, alternatif tata ruang, dan kemungkinan trade-off kebijakan.',
+    starterQuestions: ['Bagaimana perubahan iklim memengaruhi risiko banjir pesisir?', 'Kelompok dan aset apa yang paling terdampak?', 'Apakah prioritas adaptasi dapat berjalan tanpa menghambat pembangunan?'],
     sources: [
       {
         title: 'IPCC — AR6 Synthesis Report',
@@ -115,6 +130,11 @@ const SAMPLE_ISSUES: Issue[] = [
     sdg: 'SDG 4',
     title: 'Kesenjangan Akses Pendidikan Digital',
     blurb: 'Tidak semua siswa punya akses perangkat dan internet yang setara.',
+    motion: 'Sekolah harus memprioritaskan pemerataan akses internet dan perangkat digital bagi siswa yang belum terlayani.',
+    context: 'Pembelajaran digital memerlukan perangkat, konektivitas, dan kemampuan penggunaan teknologi. Ketimpangan akses dapat membuat kesempatan belajar berbeda antar siswa dan wilayah.',
+    proFocus: 'Cari bukti tentang kesenjangan perangkat dan konektivitas serta dampaknya terhadap kesempatan belajar.',
+    contraFocus: 'Cari bukti tentang keterbatasan program bantuan perangkat, faktor non-teknologi yang memengaruhi hasil belajar, dan penggunaan anggaran alternatif.',
+    starterQuestions: ['Seberapa besar kesenjangan perangkat dan internet antar siswa?', 'Apakah akses teknologi langsung meningkatkan hasil belajar?', 'Apa bentuk intervensi yang paling efektif untuk pemerataan akses?'],
     sources: [
       {
         title: 'UNESCO — Technology in education',
@@ -139,6 +159,11 @@ const SAMPLE_ISSUES: Issue[] = [
     sdg: 'SDG 12',
     title: 'Sampah Plastik Sekali Pakai di Sekolah',
     blurb: 'Konsumsi plastik sekali pakai tinggi di lingkungan sekolah.',
+    motion: 'Sekolah perlu membatasi penggunaan plastik sekali pakai di lingkungan sekolah.',
+    context: 'Plastik sekali pakai banyak digunakan untuk makanan dan minuman. Pembatasan dapat mengurangi sampah, tetapi perlu mempertimbangkan biaya, kebersihan, ketersediaan alternatif, dan kebiasaan warga sekolah.',
+    proFocus: 'Cari bukti tentang timbulan sampah plastik, manfaat pengurangan dan penggunaan kembali, serta kebijakan sekolah yang efektif.',
+    contraFocus: 'Cari bukti tentang biaya alternatif, sanitasi, kepraktisan, dan kemungkinan dampak kebijakan terhadap kantin atau siswa.',
+    starterQuestions: ['Seberapa besar kontribusi plastik sekali pakai terhadap sampah sekolah?', 'Apa alternatif yang realistis dan terjangkau?', 'Apa dampak pembatasan plastik terhadap kantin dan siswa?'],
     sources: [
       {
         title: 'UNEP — Plastic Pollution',
@@ -370,9 +395,9 @@ export default function App() {
     let cancelled = false;
     const loadExplorer = async () => {
       setExplorerLoading(true);
-      const fallback = `Eksplorasi awal untuk ${selectedIssue.title}: pahami konteks isu, pihak yang terdampak, faktor yang mungkin terkait, sudut pandang yang berbeda, dan bukti apa yang perlu diperiksa sebelum digunakan dalam debat.`;
+      const fallback = `${selectedIssue.context}\n\nMosi debat: ${selectedIssue.motion}\n\nArah PRO: ${selectedIssue.proFocus}\nArah KONTRA: ${selectedIssue.contraFocus}\n\nPertanyaan pemantik:\n${selectedIssue.starterQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`;
       try {
-        const result = await callAPI('explore', { ...selectedIssue, position: debatePosition }, fallback);
+        const result = await callAPI('explore', { issue: selectedIssue, motion: selectedIssue.motion, context: selectedIssue.context, position: debatePosition, focus: debatePosition === 'PRO' ? selectedIssue.proFocus : selectedIssue.contraFocus, starterQuestions: selectedIssue.starterQuestions }, fallback);
         if (!cancelled) {
           setExplorerReply(cleanAiText(String(result || fallback)));
           setExplorerIssueId(selectedIssue.id);
@@ -656,7 +681,7 @@ export default function App() {
         <div className="animate-[rise_0.35s_ease]">
           <p className="font-mono text-xs tracking-wider text-teal uppercase mb-2.5">02 — AI Exploration</p>
           <h1 className="font-display font-semibold text-[clamp(28px,4vw,44px)] leading-[1.1] mb-4">Eksplorasi isu</h1>
-          <p className="text-slate text-base leading-relaxed max-w-[60ch] mb-8">Isu: <strong>{selectedIssue?.title || '(belum dipilih)'}</strong><br />Posisi: <strong>{debatePosition || '(belum ditentukan)'}</strong></p>
+          <p className="text-slate text-base leading-relaxed max-w-[68ch] mb-8">Isu: <strong>{selectedIssue?.title || '(belum dipilih)'}</strong><br />Mosi: <strong>{selectedIssue?.motion || '(belum ditentukan)'}</strong><br />Posisi: <strong>{debatePosition || '(belum ditentukan)'}</strong></p>
           <div className="bg-ink-2 border border-line border-l-[3px] border-l-teal rounded-r-[14px] p-4 mb-6">
             <div className="font-mono text-[11px] text-teal uppercase mb-1.5">AI · Explorer</div>
             <p className="m-0 text-sm leading-relaxed text-paper whitespace-pre-line">{explorerLoading ? 'AI sedang menyiapkan eksplorasi...' : explorerReply}</p>
