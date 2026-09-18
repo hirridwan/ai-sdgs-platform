@@ -273,18 +273,41 @@ KELUARKAN HANYA JSON ARRAY sesuai schema.
 }
 
 async function exploreIssue(context: any, payload: any) {
-  const title = String(payload?.title || 'isu SDGs');
-  const sdg = String(payload?.sdg || '');
+  const issue = payload?.issue || {};
+  const title = String(issue?.title || payload?.title || 'isu SDGs');
+  const sdg = String(issue?.sdg || payload?.sdg || '');
+  const motion = String(issue?.motion || payload?.motion || '');
+  const issueContext = String(issue?.context || payload?.context || '');
+  const proFocus = String(issue?.proFocus || '');
+  const contraFocus = String(issue?.contraFocus || '');
+  const starterQuestions = Array.isArray(issue?.starterQuestions)
+    ? issue.starterQuestions.map((item: unknown) => String(item)).filter(Boolean)
+    : (Array.isArray(payload?.starterQuestions) ? payload.starterQuestions.map((item: unknown) => String(item)).filter(Boolean) : []);
   const position = String(payload?.position || '');
 
   const prompt = `
 Anda adalah AI Explorer untuk pembelajaran siswa SMA pada proyek AI × SDGs.
 
-Tugas Anda adalah membantu siswa memahami isu sebagai titik awal penelitian. Jangan membuat naskah debat dan jangan menentukan pemenang.
+Tugas Anda adalah membantu siswa memahami MOSI YANG DIPILIH sebagai titik awal penelitian. Jangan membuat naskah debat, jangan mengganti topik, jangan memasukkan contoh dari mosi lain, dan jangan menentukan pemenang.
 
-ISU:
-${title} (${sdg})
-POSISI SISWA: ${position || 'belum ditentukan'}
+ATURAN KONTEKS WAJIB:
+1. Hanya bahas isu, mosi, dan konteks yang tertulis pada DATA MOSI TERPILIH di bawah.
+2. Jangan mengarang atau mengganti SDG, tema, mosi, atau masalah utama.
+3. Jika posisi siswa PRO/KONTRA tersedia, gunakan posisi itu hanya untuk mengarahkan pertanyaan eksplorasi; konteks isu tetap netral.
+4. Semua pertanyaan, faktor, kelompok terdampak, sudut pandang, dan catatan fact-check harus relevan langsung dengan mosi terpilih.
+5. Jangan membawa contoh tentang AI, perubahan iklim, energi, pendidikan, media sosial, atau topik lain kecuali memang disebut dalam DATA MOSI TERPILIH.
+6. Jika informasi yang diberikan tidak cukup, katakan bahwa informasi perlu diteliti lebih lanjut daripada mengganti topik.
+
+DATA MOSI TERPILIH
+SDG: ${sdg || '-'}
+Isu: ${title}
+Mosi: ${motion || '-'}
+Konteks dasar: ${issueContext || '-'}
+Fokus PRO: ${proFocus || '-'}
+Fokus KONTRA: ${contraFocus || '-'}
+Pertanyaan pemantik dari Bank Mosi:
+${starterQuestions.length ? starterQuestions.map((question: string, index: number) => `${index + 1}. ${question}`).join('\n') : '-'}
+Posisi siswa: ${position || 'belum ditentukan'}
 
 Gunakan struktur:
 1. Konteks isu
@@ -294,7 +317,9 @@ Gunakan struktur:
 5. Pertanyaan pemantik
 6. Catatan fact-check
 
-Konteks dasar harus netral. Bila posisi siswa tersedia, arahkan pertanyaan pemantik agar berguna untuk posisi tersebut, tetapi tetap sebutkan bukti yang dapat mendukung maupun melemahkan posisi.
+Konteks dasar harus netral. Untuk posisi siswa ${position || 'yang belum ditentukan'}, arahkan pertanyaan pemantik agar berguna untuk posisi tersebut, tetapi tetap sebutkan bukti yang dapat mendukung maupun melemahkan posisi.
+
+Pastikan bagian 1 secara eksplisit membahas mosi terpilih, bukan isu lain. Pertanyaan pada bagian 5 harus berhubungan langsung dengan mosi terpilih.
 
 Gunakan bahasa Indonesia yang jelas untuk siswa SMA.
 Maksimal 500 kata.
