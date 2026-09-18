@@ -662,7 +662,7 @@ export default function App() {
     [claims],
   );
 
-  const canProceedFactCheck = claims.length > 0 && blockingClaims.length === 0 && verifiedClaims.length > 0;
+  const canProceedFactCheck = verifiedClaims.length > 0;
   const canReviewArgument = Boolean(argument.claim.trim() && argument.reason.trim() && argument.evidence.trim());
   const canProceedToDebate = canReviewArgument && Boolean(review.trim()) && !reviewLoading;
   const canProceedToSolution = sparringRound >= 1;
