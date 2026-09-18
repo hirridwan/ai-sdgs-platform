@@ -1283,7 +1283,7 @@ export default function App() {
             })}
           </div>
 
-          <div className="max-md:hidden">
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1 max-md:hidden">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8A8EA2]">Perjalanan</span>
               <span className="text-[10px] font-semibold text-[#6C5CE7]">{Math.round((furthestStage / (STAGES.length - 1 || 1)) * 100)}%</span>
