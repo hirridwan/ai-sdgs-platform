@@ -1,24 +1,14 @@
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const DEFAULT_MODEL = 'gemini-3.6-flash';
 
-const HIGH_TRUST_DOMAINS = [
-  '.gov', '.go.id', 'un.org', 'who.int', 'worldbank.org', 'oecd.org', 'imf.org',
-  'ilo.org', 'ipcc.ch', 'unicef.org', 'data.un.org', 'data.worldbank.org', 'ourworldindata.org',
-  'pubmed.ncbi.nlm.nih.gov', 'nature.com', 'science.org', 'bmj.com', 'thelancet.com',
-];
-
-const MEDIUM_TRUST_DOMAINS = [
-  'reuters.com', 'apnews.com', 'bbc.com', 'theguardian.com', 'nytimes.com', 'kompas.com',
-  'tempo.co', 'antaranews.com', 'cnbcindonesia.com',
-];
-
-type JsonSchema = Record<string, unknown>;
-
-type ClaimSource = {
+type SourcePackItem = {
   title: string;
   url: string;
-  domain: string;
-  quality: 'tinggi' | 'sedang' | 'lainnya';
+  domain?: string;
+  quality?: 'tinggi' | 'sedang' | 'lainnya';
+  year?: string;
+  scope?: string;
+  summary?: string;
 };
 
 type RawClaim = {
@@ -32,6 +22,17 @@ type RawClaim = {
   sourceUrls: string[];
   sourceTitles: string[];
 };
+
+const HIGH_TRUST_DOMAINS = [
+  '.gov', '.go.id', 'un.org', 'who.int', 'worldbank.org', 'oecd.org', 'imf.org',
+  'ilo.org', 'ipcc.ch', 'unicef.org', 'unesco.org', 'unep.org', 'data.un.org',
+  'data.worldbank.org', 'washdata.org', 'pubmed.ncbi.nlm.nih.gov', 'nature.com',
+  'science.org', 'bmj.com', 'thelancet.com', 'noaa.gov',
+];
+
+const MEDIUM_TRUST_DOMAINS = [
+  'reuters.com', 'apnews.com', 'bbc.com', 'kompas.com', 'tempo.co', 'antaranews.com',
+];
 
 function getModel(env: any) {
   return env.GEMINI_MODEL || DEFAULT_MODEL;
@@ -55,25 +56,31 @@ function normalizeUrl(url: string) {
   }
 }
 
-function qualityForDomain(domain: string): ClaimSource['quality'] {
+function qualityForDomain(domain: string): 'tinggi' | 'sedang' | 'lainnya' {
   const lower = domain.toLowerCase();
   if (HIGH_TRUST_DOMAINS.some((item) => lower === item || lower.endsWith(item) || lower.includes(item))) return 'tinggi';
   if (MEDIUM_TRUST_DOMAINS.some((item) => lower === item || lower.endsWith(item) || lower.includes(item))) return 'sedang';
   return 'lainnya';
 }
 
-function parseJson<T>(text: string): T {
-  const cleaned = text
-    .replace(/^```(?:json)?/i, '')
-    .replace(/```$/i, '')
+function cleanText(text: string) {
+  return String(text || '')
+    .replace(/^```(?:text|markdown)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\\([*_#`>])/g, '$1')
     .trim();
-  const starts = [cleaned.indexOf('{'), cleaned.indexOf('[')].filter((v) => v >= 0);
+}
+
+function parseJson<T>(text: string): T {
+  const cleaned = cleanText(text);
+  const starts = [cleaned.indexOf('{'), cleaned.indexOf('[')].filter((value) => value >= 0);
   if (!starts.length) throw new Error('Model tidak mengembalikan JSON.');
   const start = Math.min(...starts);
   return JSON.parse(cleaned.slice(start));
 }
 
-function makeSchema(): JsonSchema {
+function makeClaimSchema() {
   return {
     type: 'ARRAY',
     minItems: 1,
@@ -91,187 +98,166 @@ function makeSchema(): JsonSchema {
         sourceUrls: { type: 'ARRAY', items: { type: 'STRING' }, maxItems: 5 },
         sourceTitles: { type: 'ARRAY', items: { type: 'STRING' }, maxItems: 5 },
       },
-      required: [
-        'claim', 'normalizedClaim', 'type', 'verdict', 'confidence',
-        'explanation', 'caveat', 'sourceUrls', 'sourceTitles',
-      ],
+      required: ['claim', 'normalizedClaim', 'type', 'verdict', 'confidence', 'explanation', 'caveat', 'sourceUrls', 'sourceTitles'],
     },
   };
-}
-
-function extractGroundedSources(candidate: any): ClaimSource[] {
-  const chunks = candidate?.groundingMetadata?.groundingChunks || [];
-  const unique = new Map<string, ClaimSource>();
-
-  for (const chunk of chunks) {
-    const web = chunk?.web;
-    if (!web?.uri) continue;
-    const url = normalizeUrl(web.uri);
-    if (!url) continue;
-    const domain = domainOf(url);
-    unique.set(url, {
-      title: web.title || domain || 'Sumber web',
-      url,
-      domain,
-      quality: qualityForDomain(domain),
-    });
-  }
-
-  return [...unique.values()];
-}
-
-function sanitizeModelSources(raw: RawClaim, groundedSources: ClaimSource[]): ClaimSource[] {
-  const exact = new Map(groundedSources.map((source) => [normalizeUrl(source.url), source]));
-  const byHost = new Map(groundedSources.map((source) => [source.domain, source]));
-  const byTitle = new Map(groundedSources.map((source) => [source.title.trim().toLowerCase(), source]));
-  const requested = Array.isArray(raw.sourceUrls) ? raw.sourceUrls : [];
-  const titleList = Array.isArray(raw.sourceTitles) ? raw.sourceTitles : [];
-  const out: ClaimSource[] = [];
-
-  requested.forEach((candidateUrl, index) => {
-    const normalized = normalizeUrl(candidateUrl);
-    const requestedTitle = titleList[index]?.trim().toLowerCase() || '';
-    const titleMatch = requestedTitle
-      ? [...byTitle.entries()].find(([title]) => title === requestedTitle || title.includes(requestedTitle) || requestedTitle.includes(title))?.[1]
-      : undefined;
-    const matched = exact.get(normalized) || byHost.get(domainOf(normalized)) || titleMatch;
-    if (!matched) return;
-    const title = titleList[index]?.trim() || matched.title;
-    out.push({ ...matched, title });
-  });
-
-  const seen = new Set<string>();
-  return out.filter((source) => {
-    if (seen.has(source.url)) return false;
-    seen.add(source.url);
-    return true;
-  });
 }
 
 async function generateContent(params: {
   env: any;
   prompt: string;
-  grounded: boolean;
-  structured: boolean;
+  structured?: boolean;
   maxOutputTokens?: number;
 }) {
   const apiKey = params.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY belum diatur di environment Cloudflare Pages.');
-  }
+  if (!apiKey) throw new Error('GEMINI_API_KEY belum diatur di environment Cloudflare Pages.');
 
   const model = getModel(params.env);
   const body: any = {
     contents: [{ role: 'user', parts: [{ text: params.prompt }] }],
     generationConfig: {
       temperature: params.structured ? 0.1 : 0.4,
-      maxOutputTokens: params.maxOutputTokens ?? (params.structured ? 9000 : 1200),
+      maxOutputTokens: params.maxOutputTokens ?? (params.structured ? 7000 : 2200),
     },
   };
 
-  if (params.grounded) {
-    body.tools = [{ google_search: {} }];
-  }
-
   if (params.structured) {
     body.generationConfig.responseMimeType = 'application/json';
-    body.generationConfig.responseSchema = makeSchema();
+    body.generationConfig.responseSchema = makeClaimSchema();
   }
 
   const response = await fetch(`${GEMINI_API_BASE}/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey,
-    },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify(body),
   });
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const apiMessage = data?.error?.message || `Gemini API error ${response.status}`;
-    throw new Error(apiMessage);
+    const message = data?.error?.message || `Gemini API error ${response.status}`;
+    const error = new Error(message) as Error & { code?: string };
+    error.code = data?.error?.status || String(response.status);
+    throw error;
   }
 
   const candidate = data?.candidates?.[0];
-  const text = candidate?.content?.parts?.map((part: any) => part?.text || '').join('')?.trim();
+  const text = candidate?.content?.parts?.map((part: any) => part?.text || '').join('').trim();
   if (!text) throw new Error('Gemini tidak mengembalikan teks.');
+
+  if (candidate?.finishReason === 'MAX_TOKENS') {
+    throw new Error('Respons AI terpotong karena batas output. Silakan coba lagi dengan jawaban yang lebih ringkas.');
+  }
 
   return { data, candidate, text };
 }
 
-async function factCheck(context: any, payload: any) {
-  const issue = payload?.issue;
-  const maxClaims = Math.min(Math.max(Number(payload?.maxClaims || 8), 1), 8);
+function sanitizeSources(raw: RawClaim, sourcePack: SourcePackItem[]) {
+  const normalizedPack = sourcePack.map((source) => ({
+    ...source,
+    url: normalizeUrl(source.url),
+    domain: source.domain || domainOf(source.url),
+    quality: source.quality || qualityForDomain(source.domain || domainOf(source.url)),
+  }));
+
+  const byUrl = new Map(normalizedPack.map((source) => [source.url, source]));
+  const requestedUrls = Array.isArray(raw.sourceUrls) ? raw.sourceUrls : [];
+  const titles = Array.isArray(raw.sourceTitles) ? raw.sourceTitles : [];
+  const result: SourcePackItem[] = [];
+
+  requestedUrls.forEach((url, index) => {
+    const match = byUrl.get(normalizeUrl(url));
+    if (match) {
+      result.push({
+        ...match,
+        title: titles[index]?.trim() || match.title,
+      });
+    }
+  });
+
+  if (!result.length) {
+    const titleSet = new Set(titles.map((title) => title.toLowerCase()));
+    for (const source of normalizedPack) {
+      if (titleSet.has(source.title.toLowerCase())) result.push(source);
+    }
+  }
+
+  const seen = new Set<string>();
+  return result.filter((source) => {
+    if (!source.url || seen.has(source.url)) return false;
+    seen.add(source.url);
+    return true;
+  });
+}
+
+async function factCheckFromSourcePack(context: any, payload: any) {
+  const issue = payload?.issue || {};
+  const sourcePack: SourcePackItem[] = Array.isArray(issue?.sources) ? issue.sources : [];
   const singleClaim = typeof payload?.claim === 'string' ? payload.claim.trim() : '';
   const text = singleClaim || (typeof payload?.text === 'string' ? payload.text.trim() : '');
+  const maxClaims = Math.min(Math.max(Number(payload?.maxClaims || 8), 1), 8);
 
   if (!text) throw new Error('Teks/klaim untuk fact check kosong.');
-  if (text.length > 16000) throw new Error('Teks terlalu panjang. Batasi catatan eksplorasi sampai 16.000 karakter.');
+  if (!sourcePack.length) throw new Error('Source pack untuk mosi ini belum diisi.');
+
+  const sourceBlock = sourcePack.map((source, index) => (
+    `SUMBER ${index + 1}\nJudul: ${source.title}\nURL: ${source.url}\nTahun: ${source.year || '-'}\nCakupan: ${source.scope || '-'}\nRingkasan bukti: ${source.summary || '-'}\n`
+  )).join('\n');
 
   const prompt = `
-Anda adalah fact-checker untuk platform pendidikan AI × SDGs.
+Anda adalah fact-checker untuk proyek pendidikan AI × SDGs.
 
-TUGAS UTAMA:
-1. Pecah input menjadi klaim yang atomik: satu klaim faktual per item.
-2. Pisahkan opini/nilai dan prediksi dari klaim faktual.
-3. Untuk setiap klaim faktual, WAJIB gunakan Google Search untuk mencari bukti aktual. Jangan mengandalkan ingatan model.
-4. Utamakan sumber primer dan otoritatif: lembaga pemerintah/statistik, UN, WHO, World Bank, OECD, IMF, ILO, IPCC, jurnal ilmiah, dokumentasi resmi, atau organisasi pemilik data.
-5. Cari bukti yang MENDUKUNG dan juga bukti yang BERTENTANGAN jika memungkinkan.
-6. Jangan memberi verdict “verified” hanya karena ada satu halaman yang mengulang klaim.
-7. Jika bukti tidak cukup, pilih “unverifiable”; jangan menebak.
-8. Jika inti benar tetapi ada konteks/batasan penting, pilih “mostly_true” atau “misleading”.
-9. Jika bukti kredibel bertentangan langsung, pilih “false”.
-10. Untuk opinion/prediction, pilih “not_fact” dan jangan memaksakan verdict benar/salah.
-11. sourceUrls HARUS berisi URL yang benar-benar muncul dari hasil Google Search grounding. Jangan membuat URL.
-12. sourceTitles harus berurutan sesuai sourceUrls.
-13. Confidence adalah keyakinan terhadap verdict (0-100), bukan probabilitas dunia nyata.
-14. Penjelasan harus ringkas, jelas, dan cocok untuk siswa SMA.
+PENTING: Anda TIDAK memiliki akses web pada tugas ini. Anda hanya boleh menggunakan SOURCE PACK yang diberikan di bawah.
 
-KONTEKS ISU:
-${issue ? JSON.stringify(issue) : '(tidak ada)'}
+Aturan:
+1. Pecah input menjadi klaim atomik.
+2. Bedakan fakta, opini, dan prediksi.
+3. Untuk klaim faktual, nilai hanya berdasarkan informasi yang benar-benar tertulis dalam source pack.
+4. Jangan mengarang angka, kutipan, halaman, temuan, atau URL.
+5. Jika source pack belum cukup mendukung klaim, pilih "unverifiable".
+6. Jangan menyatakan sebab-akibat jika sumber hanya menunjukkan keterkaitan.
+7. Jangan memberi verdict "verified" hanya karena nama lembaganya kredibel.
+8. sourceUrls hanya boleh berasal dari SOURCE PACK.
+9. Jelaskan dengan bahasa yang cocok untuk siswa SMA.
+10. Maksimal ${maxClaims} klaim.
 
-INPUT:
+KONTEKS MOSI:
+${JSON.stringify(issue)}
+
+SOURCE PACK:
+${sourceBlock}
+
+INPUT SISWA:
 ${text}
 
 KELUARKAN HANYA JSON ARRAY sesuai schema.
 `.trim();
 
-  const { candidate, text: rawText } = await generateContent({
+  const { text: rawText } = await generateContent({
     env: context.env,
     prompt,
-    grounded: true,
     structured: true,
+    maxOutputTokens: 7000,
   });
 
   let parsed: RawClaim[];
   try {
     parsed = parseJson<RawClaim[]>(rawText);
   } catch {
-    throw new Error('Gemini mengembalikan format yang tidak dapat diproses. Coba lagi.');
+    throw new Error('Gemini mengembalikan format fact check yang tidak dapat diproses.');
   }
 
-  const groundedSources = extractGroundedSources(candidate);
   const checkedAt = new Date().toISOString();
-  const searchQueries = candidate?.groundingMetadata?.webSearchQueries || [];
-
   return parsed.slice(0, maxClaims).map((item, index) => {
-    const sanitizedSources = sanitizeModelSources(item, groundedSources).slice(0, 5);
     let verdict = item.verdict;
     let confidence = Math.max(0, Math.min(100, Math.round(Number(item.confidence) || 0)));
-
-    if (item.type !== 'factual') {
-      verdict = 'not_fact';
-      confidence = Math.max(confidence, 90);
-    }
-
-    if (verdict === 'verified' && sanitizedSources.length === 0) {
+    if (item.type !== 'factual') verdict = 'not_fact';
+    const sources = sanitizeSources(item, sourcePack).slice(0, 5);
+    if (verdict === 'verified' && sources.length === 0) {
       verdict = 'unverifiable';
       confidence = Math.min(confidence, 49);
     }
-
     return {
-      id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `${Date.now()}-${index}`,
       claim: item.claim,
       normalizedClaim: item.normalizedClaim || item.claim,
       type: item.type,
@@ -279,8 +265,8 @@ KELUARKAN HANYA JSON ARRAY sesuai schema.
       confidence,
       explanation: item.explanation,
       caveat: item.caveat,
-      sources: sanitizedSources,
-      searchQueries,
+      sources,
+      searchQueries: [],
       checkedAt,
     };
   });
@@ -289,55 +275,45 @@ KELUARKAN HANYA JSON ARRAY sesuai schema.
 async function exploreIssue(context: any, payload: any) {
   const title = String(payload?.title || 'isu SDGs');
   const sdg = String(payload?.sdg || '');
+  const position = String(payload?.position || '');
 
   const prompt = `
 Anda adalah AI Explorer untuk pembelajaran siswa SMA pada proyek AI × SDGs.
 
-Tujuan Anda BUKAN membuat argumen debat dan BUKAN menentukan benar/salah sebuah klaim. Tugas Anda adalah membantu siswa memahami isu sebagai titik awal penelitian.
+Tugas Anda adalah membantu siswa memahami isu sebagai titik awal penelitian. Jangan membuat naskah debat dan jangan menentukan pemenang.
 
 ISU:
 ${title} (${sdg})
+POSISI SISWA: ${position || 'belum ditentukan'}
 
-TULIS JAWABAN YANG LENGKAP DAN SELESAI. Jangan berhenti di tengah kalimat. Jangan memulai kalimat baru jika Anda tidak memiliki cukup ruang untuk menyelesaikannya.
+Gunakan struktur:
+1. Konteks isu
+2. Faktor yang mungkin terkait
+3. Kelompok yang terdampak
+4. Berbagai sudut pandang
+5. Pertanyaan pemantik
+6. Catatan fact-check
 
-Gunakan struktur berikut, dengan judul singkat dan paragraf/bullet yang mudah dibaca:
-1. Konteks isu — jelaskan masalah secara umum tanpa angka spesifik yang tidak perlu.
-2. Faktor yang mungkin terkait — jelaskan 3–5 faktor yang layak diteliti.
-3. Kelompok yang terdampak — sebutkan siapa yang perlu diperhatikan.
-4. Berbagai sudut pandang — minimal sudut pandang pemerintah, masyarakat, dan lingkungan/keberlanjutan.
-5. Pertanyaan pemantik — berikan 4 pertanyaan yang membantu siswa mencari bukti.
-6. Catatan fact-check — tutup dengan satu pengingat bahwa informasi ini adalah titik awal dan setiap klaim/data harus diperiksa dengan sumber terpercaya sebelum digunakan dalam debat.
+Konteks dasar harus netral. Bila posisi siswa tersedia, arahkan pertanyaan pemantik agar berguna untuk posisi tersebut, tetapi tetap sebutkan bukti yang dapat mendukung maupun melemahkan posisi.
 
-BATASAN:
-- Maksimal sekitar 450 kata.
-- Gunakan bahasa Indonesia yang jelas dan sesuai siswa SMA.
-- Jangan memberikan naskah debat jadi.
-- Jangan menyajikan angka/statistik seolah sudah terverifikasi jika tidak sedang melakukan pencarian sumber.
-- Pastikan seluruh jawaban diakhiri dengan kalimat yang lengkap.
+Gunakan bahasa Indonesia yang jelas untuk siswa SMA.
+Maksimal 500 kata.
+Jangan memakai Markdown bold (**), heading dengan #, atau fenced code. Gunakan teks biasa, nomor, dan bullet sederhana.
+Pastikan respons selesai dalam kalimat lengkap.
 `.trim();
 
-  const { text } = await generateContent({
-    env: context.env,
-    prompt,
-    grounded: false,
-    structured: false,
-    maxOutputTokens: 2200,
-  });
-
+  const { text } = await generateContent({ env: context.env, prompt, structured: false, maxOutputTokens: 2800 });
   return text;
 }
 
 export async function onRequestPost(context: any) {
   try {
-    const requestData = await context.request.json();
-    const { action, payload } = requestData || {};
-
-    if (!action) {
-      return json({ error: 'Action tidak ditemukan.' }, 400);
-    }
+    const body = await context.request.json();
+    const { action, payload } = body || {};
+    if (!action) return json({ error: 'Action tidak ditemukan.' }, 400);
 
     if (action === 'factCheck') {
-      const result = await factCheck(context, payload || {});
+      const result = await factCheckFromSourcePack(context, payload || {});
       return json({ result }, 200);
     }
 
@@ -345,36 +321,78 @@ export async function onRequestPost(context: any) {
     if (!apiKey) return json({ error: 'GEMINI_API_KEY belum diatur di environment Cloudflare Pages.' }, 500);
 
     let prompt = '';
-    let maxOutputTokens = 1200;
+    let maxOutputTokens = 1800;
 
     if (action === 'explore') {
       const result = await exploreIssue(context, payload || {});
       return json({ result }, 200);
-    } else if (action === 'reviewArgument') {
-      prompt = `Review argumen debat berikut. Klaim: "${payload?.claim || ''}". Alasan: "${payload?.reason || ''}". Bukti: "${payload?.evidence || ''}". Berikan kritik konstruktif tentang relevansi bukti, lompatan logika, konteks yang hilang, dan cara memperbaikinya. Maksimal 3 paragraf.`;
+    }
+
+    if (action === 'reviewArgument') {
+      prompt = `
+Anda adalah AI Reviewer untuk latihan argumentasi siswa.
+
+Tinjau argumen berikut:
+Klaim: ${payload?.claim || ''}
+Alasan: ${payload?.reason || ''}
+Bukti: ${payload?.evidence || ''}
+
+Bahas secara konkret:
+1. relevansi bukti terhadap klaim;
+2. lompatan logika;
+3. konteks yang hilang;
+4. satu perbaikan prioritas.
+
+Jangan mengarang fakta baru. Jika bukti belum cukup spesifik, katakan demikian.
+Maksimal 220 kata.
+Tanpa Markdown.
+Pastikan respons selesai.
+`.trim();
+      maxOutputTokens = 1200;
     } else if (action === 'debate') {
-      prompt = `Berperan sebagai sparring partner debat yang kritis namun suportif. Argumen utama: "${payload?.arg?.claim || ''}". Respons pengguna: "${payload?.msg || ''}". Berikan satu sanggahan atau pertanyaan penguji yang memaksa pengguna menghubungkan klaim dengan bukti. Jangan mengarang fakta baru.`;
+      prompt = `
+Anda adalah sparring partner sebelum debat siswa PRO dan KONTRA.
+
+Klaim siswa: ${payload?.arg?.claim || ''}
+Alasan siswa: ${payload?.arg?.reason || ''}
+Bukti siswa: ${payload?.arg?.evidence || ''}
+Respons siswa ronde ${payload?.round || 1}: ${payload?.msg || ''}
+
+Berikan SATU sanggahan atau SATU pertanyaan penguji yang konkret. Dorong siswa menghubungkan klaim dengan bukti dan mengakui batasan bukti bila perlu.
+Jangan mengarang data baru.
+Maksimal 110 kata.
+Tanpa Markdown.
+`.trim();
+      maxOutputTokens = 700;
     } else if (action === 'evaluateSolution') {
-      prompt = `Evaluasi solusi SDGs berikut. Solusi: "${payload?.solution || ''}". Berikan penilaian singkat terhadap kesesuaian masalah, kelayakan pelaksanaan, pihak yang terlibat, indikator keberhasilan, dan satu risiko utama.`;
+      prompt = `
+Anda adalah AI Evaluator untuk proyek pembelajaran AI × SDGs.
+
+Evaluasi solusi siswa berikut:
+${payload?.solution || ''}
+
+Tulis tepat 6 bagian:
+1. Kesesuaian masalah
+2. Kelayakan pelaksanaan
+3. Pihak yang terlibat
+4. Indikator keberhasilan
+5. Risiko utama
+6. Kesimpulan dan satu perbaikan prioritas
+
+Setiap bagian 1-2 kalimat. Maksimal 300 kata.
+Jangan gunakan Markdown bold, heading #, atau simbol Markdown. Gunakan teks biasa dan penomoran.
+Pastikan respons selesai.
+`.trim();
+      maxOutputTokens = 1800;
     } else {
       return json({ error: `Action tidak dikenal: ${action}` }, 400);
     }
 
-    const { text } = await generateContent({
-      env: context.env,
-      prompt,
-      grounded: false,
-      structured: false,
-      maxOutputTokens,
-    });
-
-    return json({ result: text }, 200);
+    const { text } = await generateContent({ env: context.env, prompt, structured: false, maxOutputTokens });
+    return json({ result: cleanText(text) }, 200);
   } catch (error: any) {
     console.error('API /api/gemini error:', error);
-    return json(
-      { error: error?.message || 'Terjadi kesalahan pada server.', code: 'GEMINI_REQUEST_FAILED' },
-      500,
-    );
+    return json({ error: error?.message || 'Terjadi kesalahan pada server.', code: error?.code || 'GEMINI_REQUEST_FAILED' }, 500);
   }
 }
 
