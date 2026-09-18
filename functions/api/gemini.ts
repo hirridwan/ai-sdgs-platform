@@ -354,47 +354,111 @@ export async function onRequestPost(context: any) {
     }
 
     if (action === 'reviewArgument') {
+      const issue = payload?.issue || {};
+      const argument = payload?.argument || {};
+      const sourcePack: SourcePackItem[] = Array.isArray(issue?.sources) ? issue.sources : [];
+      const sourceBlock = sourcePack.map((source, index) => (
+        `SUMBER ${index + 1}\nJudul: ${source.title}\nTahun: ${source.year || '-'}\nCakupan: ${source.scope || '-'}\nRingkasan Source Pack: ${source.summary || '-'}\nURL: ${source.url}`
+      )).join('\n\n');
+
       prompt = `
-Anda adalah AI Reviewer untuk latihan argumentasi siswa.
+Anda adalah AI Reviewer untuk latihan argumentasi siswa SMA dalam proyek AI × SDGs.
 
-Tinjau argumen berikut:
-Klaim: ${payload?.claim || ''}
-Alasan: ${payload?.reason || ''}
-Bukti: ${payload?.evidence || ''}
+Tugas Anda adalah menilai kualitas hubungan antara klaim, alasan, dan bukti siswa untuk MOSI YANG DIPILIH. Jangan membuat naskah debat dan jangan mengganti topik.
 
-Bahas secara konkret:
-1. relevansi bukti terhadap klaim;
-2. lompatan logika;
-3. konteks yang hilang;
-4. satu perbaikan prioritas.
+KONTEKS MOSI
+SDG: ${issue?.sdg || '-'}
+Isu: ${issue?.title || '-'}
+Mosi: ${issue?.motion || '-'}
+Konteks: ${issue?.context || '-'}
+Posisi siswa: ${payload?.position || '-'}
 
-Jangan mengarang fakta baru. Jika bukti belum cukup spesifik, katakan demikian.
-Maksimal 220 kata.
-Tanpa Markdown.
+ARGUMEN SISWA
+Klaim: ${argument?.claim || '-'}
+Alasan: ${argument?.reason || '-'}
+Bukti: ${argument?.evidence || '-'}
+
+SOURCE PACK YANG TERKAIT DENGAN MOSI
+${sourceBlock || '-'}
+
+ATURAN
+1. Nilai bukti berdasarkan isi yang benar-benar diberikan siswa dan ringkasan Source Pack di atas.
+2. Jangan menganggap sebuah klaim benar hanya karena sumbernya berasal dari lembaga tepercaya.
+3. Jangan mengarang angka, hasil penelitian, kutipan, halaman, atau fakta baru.
+4. Bedakan antara apa yang didukung bukti dan apa yang merupakan perluasan kesimpulan siswa.
+5. Jika bukti hanya mendukung klaim yang lebih sempit, jelaskan batas klaim tersebut.
+6. Pastikan review benar-benar relevan dengan mosi terpilih.
+
+Tulis tepat 4 bagian:
+1. Relevansi bukti
+2. Hubungan klaim dan alasan
+3. Catatan penting
+4. Kesimpulan dan satu perbaikan prioritas
+
+Setiap bagian 1-3 kalimat. Maksimal 260 kata.
+Tanpa Markdown bold, heading #, atau fenced code. Gunakan teks biasa dan penomoran.
 Pastikan respons selesai.
 `.trim();
-      maxOutputTokens = 1200;
+      maxOutputTokens = 1500;
     } else if (action === 'debate') {
+      const issue = payload?.issue || {};
       prompt = `
 Anda adalah sparring partner sebelum debat siswa PRO dan KONTRA.
 
-Klaim siswa: ${payload?.arg?.claim || ''}
-Alasan siswa: ${payload?.arg?.reason || ''}
-Bukti siswa: ${payload?.arg?.evidence || ''}
+KONTEKS MOSI
+SDG: ${issue?.sdg || '-'}
+Isu: ${issue?.title || '-'}
+Mosi: ${issue?.motion || '-'}
+Konteks: ${issue?.context || '-'}
+Posisi siswa: ${payload?.position || '-'}
+
+ARGUMEN SISWA
+Klaim: ${payload?.arg?.claim || ''}
+Alasan: ${payload?.arg?.reason || ''}
+Bukti: ${payload?.arg?.evidence || ''}
 Respons siswa ronde ${payload?.round || 1}: ${payload?.msg || ''}
 
-Berikan SATU sanggahan atau SATU pertanyaan penguji yang konkret. Dorong siswa menghubungkan klaim dengan bukti dan mengakui batasan bukti bila perlu.
-Jangan mengarang data baru.
-Maksimal 110 kata.
+Berikan SATU sanggahan atau SATU pertanyaan penguji yang konkret dan langsung berkaitan dengan mosi. Dorong siswa menghubungkan klaim dengan bukti dan mengakui batasan bukti bila perlu.
+Jangan mengarang data baru atau membawa topik dari mosi lain.
+Maksimal 130 kata.
 Tanpa Markdown.
+Pastikan respons selesai.
 `.trim();
-      maxOutputTokens = 700;
+      maxOutputTokens = 850;
     } else if (action === 'evaluateSolution') {
+      const issue = payload?.issue || {};
+      const sourcePack: SourcePackItem[] = Array.isArray(issue?.sources) ? issue.sources : [];
+      const sourceBlock = sourcePack.map((source, index) => (
+        `SUMBER ${index + 1}: ${source.title} | Tahun: ${source.year || '-'} | Cakupan: ${source.scope || '-'}\nRingkasan: ${source.summary || '-'}\nURL: ${source.url}`
+      )).join('\n');
+
       prompt = `
 Anda adalah AI Evaluator untuk proyek pembelajaran AI × SDGs.
 
-Evaluasi solusi siswa berikut:
-${payload?.solution || ''}
+Evaluasi SOLUSI SISWA terhadap MOSI YANG DIPILIH, bukan secara generik. Jangan menilai siapa yang menang dalam debat. Tugas Anda adalah membantu siswa memperbaiki solusi agar relevan, realistis, terukur, dan sesuai konteks.
+
+KONTEKS MOSI
+SDG: ${issue?.sdg || '-'}
+Isu: ${issue?.title || '-'}
+Mosi: ${issue?.motion || '-'}
+Konteks: ${issue?.context || '-'}
+Posisi siswa: ${payload?.position || '-'}
+Fokus PRO: ${issue?.proFocus || '-'}
+Fokus KONTRA: ${issue?.contraFocus || '-'}
+
+SOLUSI SISWA
+${payload?.solution || '-'}
+
+SOURCE PACK MOSI (untuk konteks, bukan untuk mengarang bukti baru)
+${sourceBlock || '-'}
+
+ATURAN EVALUASI
+1. Evaluasi harus spesifik terhadap masalah dan mosi di atas.
+2. Jangan memasukkan indikator, risiko, atau pihak yang hanya relevan untuk mosi lain.
+3. Untuk indikator keberhasilan, gunakan ukuran yang benar-benar relevan dengan topik, misalnya indikator pangan/gizi untuk isu bantuan pangan, emisi untuk isu transportasi/iklim, atau hasil belajar untuk isu pendidikan.
+4. Jangan mengarang angka target atau bukti empiris yang tidak ada.
+5. Jika solusi masih terlalu umum, sebutkan bagian yang perlu dibuat lebih konkret.
+6. Bedakan kelayakan dari bukti efektivitas: solusi yang realistis belum tentu terbukti efektif.
 
 Tulis tepat 6 bagian:
 1. Kesesuaian masalah
@@ -404,11 +468,11 @@ Tulis tepat 6 bagian:
 5. Risiko utama
 6. Kesimpulan dan satu perbaikan prioritas
 
-Setiap bagian 1-2 kalimat. Maksimal 300 kata.
-Jangan gunakan Markdown bold, heading #, atau simbol Markdown. Gunakan teks biasa dan penomoran.
+Setiap bagian 1-3 kalimat. Maksimal 360 kata.
+Tanpa Markdown bold, heading #, atau fenced code. Gunakan teks biasa dan penomoran.
 Pastikan respons selesai.
 `.trim();
-      maxOutputTokens = 1800;
+      maxOutputTokens = 2200;
     } else {
       return json({ error: `Action tidak dikenal: ${action}` }, 400);
     }

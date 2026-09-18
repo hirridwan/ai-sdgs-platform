@@ -62,7 +62,15 @@ const FACT_CHECK_MODE = String((import.meta as any).env?.VITE_FACT_CHECK_MODE ||
   ? 'source-pack'
   : 'dummy';
 
-const AI_STAGE_MODE = String((import.meta as any).env?.VITE_AI_STAGE_MODE || 'dummy') === 'api'
+const AI_STAGE_MODE = String((import.meta as any).env?.VITE_AI_STAGE_MODE || 'api') === 'api'
+  ? 'api'
+  : 'dummy';
+
+const ARGUMENT_REVIEW_MODE = String((import.meta as any).env?.VITE_ARGUMENT_REVIEW_MODE || 'api') === 'api'
+  ? 'api'
+  : 'dummy';
+
+const SOLUTION_EVALUATOR_MODE = String((import.meta as any).env?.VITE_SOLUTION_EVALUATOR_MODE || 'api') === 'api'
   ? 'api'
   : 'dummy';
 
@@ -693,7 +701,7 @@ export default function App() {
       setExplorerLoading(true);
       const fallback = `${selectedIssue.context}\n\nMosi debat: ${selectedIssue.motion}\n\nArah PRO: ${selectedIssue.proFocus}\nArah KONTRA: ${selectedIssue.contraFocus}\n\nPertanyaan pemantik:\n${selectedIssue.starterQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`;
       try {
-        const result = await callAPI('explore', { issue: selectedIssue, motion: selectedIssue.motion, context: selectedIssue.context, position: debatePosition, focus: debatePosition === 'PRO' ? selectedIssue.proFocus : selectedIssue.contraFocus, starterQuestions: selectedIssue.starterQuestions }, fallback);
+        const result = await callAPI('explore', { issue: selectedIssue, position: debatePosition, focus: debatePosition === 'PRO' ? selectedIssue.proFocus : selectedIssue.contraFocus, starterQuestions: selectedIssue.starterQuestions });
         if (!cancelled) {
           setExplorerReply(cleanAiText(String(result || fallback)));
           setExplorerIssueId(selectedIssue.id);
@@ -773,26 +781,20 @@ export default function App() {
     return `1. Kesesuaian masalah\nSolusi relevan dengan masalah pada ${issueContext} dan perlu menunjukkan hubungan yang jelas antara masalah, tindakan, serta hasil yang diharapkan.\n\n2. Kelayakan pelaksanaan\nSolusi cukup realistis jika dilakukan bertahap dan disesuaikan dengan sumber daya, waktu, serta kondisi pihak yang terlibat.\n\n3. Pihak yang terlibat\nTentukan pihak yang memiliki kewenangan, pelaksana, penerima manfaat, serta pihak pendukung sesuai konteks mosi.\n\n4. Indikator keberhasilan\nGunakan ukuran yang dapat diamati, misalnya perubahan akses/partisipasi, penggunaan layanan, biaya, emisi, hasil belajar, keselamatan digital, kualitas konsumsi, atau indikator lain yang relevan dengan isu.\n\n5. Risiko utama\nPerhatikan keterbatasan anggaran, perubahan kebiasaan, infrastruktur, ketimpangan akses, dampak tidak langsung, atau partisipasi yang rendah.\n\n6. Kesimpulan dan satu perbaikan prioritas\nSolusi dapat dilanjutkan setelah indikator keberhasilan dan pembagian tanggung jawab dibuat lebih spesifik.`;
   }
 
-  async function callAPI(action: string, payload: unknown, fallbackData?: unknown) {
-    try {
-      const response = await fetch('/api/gemini', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, payload }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const error = new Error(data?.error || `API gagal (${response.status})`) as ApiError;
-        error.code = data?.code;
-        throw error;
-      }
-      if (data?.result === undefined) throw new Error('Respons API tidak memiliki field result.');
-      return data.result;
-    } catch (error) {
-      if (action === 'factCheck') throw error;
-      await fakeDelay();
-      return fallbackData;
+  async function callAPI(action: string, payload: unknown) {
+    const response = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, payload }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(data?.error || `API gagal (${response.status})`) as ApiError;
+      error.code = data?.code;
+      throw error;
     }
+    if (data?.result === undefined) throw new Error('Respons API tidak memiliki field result.');
+    return data.result;
   }
 
   function goTo(index: number) {
@@ -857,12 +859,18 @@ export default function App() {
   }
 
   function selectClaimForArgument(claim: ClaimResult) {
+    const sourceEvidence = claim.sources.map((source) => [
+      `Sumber: ${source.title}`,
+      `Ringkasan Source Pack: ${source.summary || 'Ringkasan sumber belum tersedia.'}`,
+      `URL: ${source.url}`,
+    ].join('\n')).join('\n\n');
+
     setArgument({
       claim: claim.claim,
       reason: '',
       evidence: FACT_CHECK_MODE === 'dummy'
         ? mockEvidenceForClaim(selectedIssue, claim.claim)
-        : claim.sources.map((source) => `${source.title} — ${source.url}`).join('\n'),
+        : sourceEvidence,
     });
     setReview('');
     goTo(4);
@@ -871,11 +879,15 @@ export default function App() {
   async function getReview() {
     setReviewLoading(true);
     try {
-      if (AI_STAGE_MODE === 'dummy') {
+      if (ARGUMENT_REVIEW_MODE === 'dummy') {
         await fakeDelay();
         setReview(mockArgumentReview(selectedIssue, argument));
       } else {
-        const reply = await callAPI('reviewArgument', argument);
+        const reply = await callAPI('reviewArgument', {
+          issue: selectedIssue,
+          position: debatePosition,
+          argument,
+        });
         setReview(cleanAiText(String(reply || 'AI Reviewer tidak memberikan hasil.')));
       }
     } catch (error) {
@@ -900,7 +912,13 @@ export default function App() {
         await fakeDelay();
         reply = mockDebateReply(sparringRound + 1);
       } else {
-        reply = cleanAiText(String(await callAPI('debate', { msg: message, arg: argument, round: sparringRound + 1 })));
+        reply = cleanAiText(String(await callAPI('debate', {
+          msg: message,
+          arg: argument,
+          issue: selectedIssue,
+          position: debatePosition,
+          round: sparringRound + 1,
+        })));
       }
       setDebateLog([...history, { who: 'ai', text: reply }]);
       setSparringRound((previous) => previous + 1);
@@ -915,11 +933,15 @@ export default function App() {
     if (!solution.trim()) return;
     setEvalLoading(true);
     try {
-      if (AI_STAGE_MODE === 'dummy') {
+      if (SOLUTION_EVALUATOR_MODE === 'dummy') {
         await fakeDelay();
         setEvalReply(mockSolutionEvaluation());
       } else {
-        const reply = await callAPI('evaluateSolution', { solution });
+        const reply = await callAPI('evaluateSolution', {
+          solution,
+          issue: selectedIssue,
+          position: debatePosition,
+        });
         setEvalReply(cleanAiText(String(reply || 'AI Evaluator tidak memberikan hasil.')));
       }
     } catch (error) {
@@ -1128,7 +1150,7 @@ export default function App() {
           {!canReviewArgument && <p className="text-xs text-slate mt-2">Lengkapi klaim, alasan, dan bukti sebelum meminta review.</p>}
           {review && !reviewLoading && (
             <div className="bg-ink-2 border border-line border-l-[3px] border-l-teal rounded-r-[14px] p-4 mt-4">
-              <div className="font-mono text-[11px] text-teal uppercase mb-1.5">AI · Reviewer</div>
+              <div className="font-mono text-[11px] text-teal uppercase mb-1.5">AI · Reviewer {ARGUMENT_REVIEW_MODE === 'api' ? '· API' : '· Simulasi'}</div>
               <p className="m-0 text-sm leading-relaxed text-paper whitespace-pre-wrap">{review}</p>
             </div>
           )}
@@ -1187,7 +1209,7 @@ export default function App() {
           <div className="flex gap-3 flex-wrap mt-7 mb-4"><Btn secondary onClick={getSolutionEvaluation} disabled={!solution.trim() || evalLoading}>{evalLoading ? 'Mengevaluasi...' : 'Evaluasi kelayakan'}</Btn></div>
           {evalReply && !evalLoading && (
             <div className="bg-ink-2 border border-line border-l-[3px] border-l-teal rounded-r-[14px] p-4 mt-4">
-              <div className="font-mono text-[11px] text-teal uppercase mb-1.5">AI · Evaluator</div>
+              <div className="font-mono text-[11px] text-teal uppercase mb-1.5">AI · Evaluator {SOLUTION_EVALUATOR_MODE === 'api' ? '· API' : '· Simulasi'}</div>
               <p className="m-0 text-sm leading-relaxed text-paper whitespace-pre-wrap">{evalReply}</p>
             </div>
           )}
