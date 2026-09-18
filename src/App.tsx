@@ -71,6 +71,98 @@ const SAMPLE_ISSUES: Issue[] = [
 
 const fakeDelay = (ms = 600) => new Promise((resolve) => setTimeout(resolve, ms));
 
+
+const MOCK_FACT_CHECK = true;
+
+type MockProfile = {
+  defaultClaims: string[];
+  explanation: string;
+  caveat: string;
+  sources: Source[];
+  searchQueries: string[];
+};
+
+const MOCK_FACT_CHECK_PROFILES: Record<number, MockProfile> = {
+  1: {
+    defaultClaims: [
+      'Masyarakat berpenghasilan rendah di permukiman padat perkotaan cenderung menghadapi akses air bersih yang lebih rendah dibandingkan masyarakat perkotaan lainnya.',
+      'Ketimpangan akses air di kawasan perkotaan tidak hanya dipengaruhi oleh ketersediaan air, tetapi juga oleh infrastruktur dan kondisi sosial ekonomi masyarakat.',
+    ],
+    explanation: 'Simulasi menunjukkan bahwa inti klaim didukung oleh referensi umum mengenai ketimpangan layanan air, tetapi istilah “akses air bersih” perlu didefinisikan secara spesifik sebelum digunakan sebagai bukti debat.',
+    caveat: 'Ini adalah hasil DUMMY untuk pengujian alur aplikasi. Sistem belum melakukan pencarian atau verifikasi web secara langsung.',
+    sources: [
+      { title: 'WHO — Drinking-water', url: 'https://www.who.int/news-room/fact-sheets/detail/drinking-water', domain: 'who.int', quality: 'tinggi' },
+      { title: 'WHO/UNICEF Joint Monitoring Programme (JMP)', url: 'https://washdata.org/', domain: 'washdata.org', quality: 'tinggi' },
+    ],
+    searchQueries: ['simulasi: ketimpangan akses air bersih perkotaan', 'simulasi: low income informal settlements drinking water access'],
+  },
+  2: {
+    defaultClaims: [
+      'Perubahan iklim dapat meningkatkan risiko banjir pesisir melalui kenaikan muka laut dan perubahan pola kejadian ekstrem.',
+      'Wilayah pesisir yang padat penduduk dapat menghadapi risiko banjir yang lebih besar ketika paparan penduduk dan infrastruktur tinggi.',
+    ],
+    explanation: 'Simulasi menilai klaim sebagai didukung secara umum oleh literatur perubahan iklim, tetapi dampak spesifik berbeda menurut lokasi, elevasi, perlindungan pantai, dan kondisi setempat.',
+    caveat: 'Ini adalah hasil DUMMY untuk pengujian alur aplikasi. Sistem belum melakukan pencarian atau verifikasi web secara langsung.',
+    sources: [
+      { title: 'IPCC — AR6 Synthesis Report', url: 'https://www.ipcc.ch/report/ar6/syr/', domain: 'ipcc.ch', quality: 'tinggi' },
+      { title: 'NOAA — Climate & Coastal Resources', url: 'https://www.noaa.gov/climate', domain: 'noaa.gov', quality: 'tinggi' },
+    ],
+    searchQueries: ['simulasi: climate change coastal flooding sea level rise', 'simulasi: coastal flood risk urban areas'],
+  },
+  3: {
+    defaultClaims: [
+      'Siswa yang memiliki akses internet dan perangkat digital yang lebih baik memiliki kesempatan belajar yang lebih besar dibandingkan siswa yang akses digitalnya terbatas.',
+      'Kesenjangan akses perangkat dan koneksi internet dapat menjadi salah satu hambatan dalam penerapan pembelajaran digital secara merata.',
+    ],
+    explanation: 'Simulasi menunjukkan bahwa akses perangkat dan konektivitas merupakan faktor yang relevan dalam pembelajaran digital. Namun, akses teknologi bukan satu-satunya faktor yang menentukan kualitas atau hasil belajar.',
+    caveat: 'Ini adalah hasil DUMMY untuk pengujian alur aplikasi. Sistem belum melakukan pencarian atau verifikasi web secara langsung.',
+    sources: [
+      { title: 'UNESCO — Global Education Monitoring Report: Technology in education', url: 'https://www.unesco.org/gem-report/en/technology', domain: 'unesco.org', quality: 'tinggi' },
+      { title: 'UNICEF — Digital Learning', url: 'https://www.unicef.org/education/digital-learning', domain: 'unicef.org', quality: 'tinggi' },
+    ],
+    searchQueries: ['simulasi: digital divide students internet devices education', 'simulasi: access to technology digital learning students'],
+  },
+  4: {
+    defaultClaims: [
+      'Penggunaan plastik sekali pakai yang tinggi di lingkungan sekolah dapat meningkatkan jumlah sampah plastik yang perlu dikelola.',
+      'Upaya mengurangi plastik sekali pakai di sekolah dapat melibatkan perubahan kebiasaan, penyediaan alternatif guna ulang, dan pengelolaan sampah yang lebih baik.',
+    ],
+    explanation: 'Simulasi menilai klaim sebagai masuk akal dan relevan dengan isu pengurangan sampah plastik, tetapi besarnya dampak perlu dibuktikan dengan data sekolah atau wilayah yang spesifik.',
+    caveat: 'Ini adalah hasil DUMMY untuk pengujian alur aplikasi. Sistem belum melakukan pencarian atau verifikasi web secara langsung.',
+    sources: [
+      { title: 'UNEP — Plastic Pollution', url: 'https://www.unep.org/plastic-pollution', domain: 'unep.org', quality: 'tinggi' },
+      { title: 'UNEP — Single-Use Plastics', url: 'https://www.unep.org/interactives/beat-plastic-pollution/', domain: 'unep.org', quality: 'tinggi' },
+    ],
+    searchQueries: ['simulasi: single use plastic waste schools', 'simulasi: reducing plastic waste school environment'],
+  },
+};
+
+async function mockFactCheck(payload: { text?: string; claim?: string; issue?: Issue | null; maxClaims?: number }): Promise<ClaimResult[]> {
+  await fakeDelay(850);
+  const issueId = payload.issue?.id || 1;
+  const profile = MOCK_FACT_CHECK_PROFILES[issueId] || MOCK_FACT_CHECK_PROFILES[1];
+  const singleClaim = (payload.claim || '').trim();
+  const inputText = singleClaim || (payload.text || '').trim();
+
+  const claims = singleClaim
+    ? [singleClaim]
+    : profile.defaultClaims.slice(0, Math.min(Number(payload.maxClaims || 2), 2));
+
+  return claims.map((claim, index) => ({
+    id: `mock-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+    claim: claim || inputText,
+    normalizedClaim: claim || inputText,
+    type: 'factual',
+    verdict: index === 0 ? 'mostly_true' : 'verified',
+    confidence: index === 0 ? 86 : 91,
+    explanation: profile.explanation,
+    caveat: profile.caveat,
+    sources: profile.sources,
+    searchQueries: profile.searchQueries,
+    checkedAt: new Date().toISOString(),
+  }));
+}
+
 const verdictMeta: Record<ClaimResult['verdict'], { label: string; color: string; description: string }> = {
   verified: {
     label: 'Terverifikasi',
@@ -197,7 +289,7 @@ export default function App() {
           <div className="animate-[rise_0.35s_ease]">
             <p className="font-mono text-xs tracking-wider text-teal uppercase mb-2.5">01 — Issue Bank</p>
             <h1 className="font-display font-semibold text-[clamp(28px,4vw,44px)] leading-[1.1] mb-4">Pilih satu isu SDGs</h1>
-            <p className="text-slate text-base leading-relaxed max-w-[60ch] mb-8">Isu ini akan menjadi konteks seluruh perjalananmu.</p>
+            <p className="text-slate text-base leading-relaxed max-w-[60ch] mb-8">Pilih satu dari 4 isu demo. Isu yang dipilih akan menjadi konteks seluruh perjalananmu.</p>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
               {SAMPLE_ISSUES.map((issue) => (
                 <button
@@ -318,11 +410,9 @@ export default function App() {
       setLoading(true);
       setError(null);
       try {
-        const result = await callAPI('factCheck', {
-          text: exploration,
-          issue: selectedIssue,
-          maxClaims: 8,
-        });
+        const result = MOCK_FACT_CHECK
+          ? await mockFactCheck({ text: exploration, issue: selectedIssue, maxClaims: 2 })
+          : await callAPI('factCheck', { text: exploration, issue: selectedIssue, maxClaims: 8 });
         if (!Array.isArray(result)) throw new Error('Hasil fact check tidak berbentuk daftar klaim.');
         setClaims(result);
       } catch (err) {
@@ -339,11 +429,9 @@ export default function App() {
       setRecheckingId(`new-${Date.now()}`);
       setError(null);
       try {
-        const result = await callAPI('factCheck', {
-          claim,
-          issue: selectedIssue,
-          maxClaims: 1,
-        });
+        const result = MOCK_FACT_CHECK
+          ? await mockFactCheck({ claim, issue: selectedIssue, maxClaims: 1 })
+          : await callAPI('factCheck', { claim, issue: selectedIssue, maxClaims: 1 });
         if (!Array.isArray(result) || result.length === 0) throw new Error('Klaim tidak menghasilkan hasil pemeriksaan.');
         setClaims((previous) => [...previous, result[0]]);
       } catch (err) {
@@ -357,11 +445,9 @@ export default function App() {
       setRecheckingId(claim.id);
       setError(null);
       try {
-        const result = await callAPI('factCheck', {
-          claim: claim.claim,
-          issue: selectedIssue,
-          maxClaims: 1,
-        });
+        const result = MOCK_FACT_CHECK
+          ? await mockFactCheck({ claim: claim.claim, issue: selectedIssue, maxClaims: 1 })
+          : await callAPI('factCheck', { claim: claim.claim, issue: selectedIssue, maxClaims: 1 });
         if (!Array.isArray(result) || result.length === 0) throw new Error('Tidak ada hasil baru untuk klaim tersebut.');
         setClaims((previous) => previous.map((item) => (item.id === claim.id ? result[0] : item)));
       } catch (err) {
@@ -377,10 +463,15 @@ export default function App() {
       <div className="animate-[rise_0.35s_ease]">
         <p className="font-mono text-xs tracking-wider text-teal uppercase mb-2.5">03 — Fact Check</p>
         <h1 className="font-display font-semibold text-[clamp(28px,4vw,44px)] leading-[1.1] mb-4">Periksa klaim dengan bukti</h1>
-        <p className="text-slate text-base leading-relaxed max-w-[70ch] mb-6">
-          Ini bukan sekadar meminta AI mengatakan “benar/salah”. Sistem sekarang menggunakan Google Search untuk mencari bukti aktual,
-          memprioritaskan sumber primer, dan menampilkan tautan sumber yang benar-benar dipakai sebagai grounding.
+        <p className="text-slate text-base leading-relaxed max-w-[70ch] mb-4">
+          Untuk sementara, Fact Check berjalan dalam <strong>mode simulasi (dummy)</strong> agar alur pembelajaran dapat diuji tanpa bergantung pada quota API.
+          Hasil di halaman ini bukan hasil verifikasi web nyata.
         </p>
+
+        <div className="bg-amber/10 border border-amber/20 rounded-[12px] p-3 mb-6 text-sm leading-relaxed text-paper">
+          <strong>MODE SIMULASI:</strong> 4 topik Issue Bank tetap tersedia. Gunakan tahap ini untuk menguji alur
+          <strong> klaim → verdict → sumber → Argument Builder</strong> sebelum Fact Check nyata diaktifkan kembali.
+        </div>
 
         <div className="flex gap-3 flex-wrap mb-5">
           <Btn onClick={runFactCheck} disabled={loading || !exploration.trim()}>{loading ? 'Memeriksa...' : 'Jalankan Fact Check'}</Btn>
@@ -393,7 +484,7 @@ export default function App() {
             <textarea
               value={draftClaim}
               onChange={(event) => setDraftClaim(event.target.value)}
-              placeholder="Contoh: 'AI akan menghilangkan lebih banyak pekerjaan daripada yang diciptakannya.'"
+              placeholder="Tulis satu klaim yang ingin diuji. Contoh: 'Siswa dengan akses internet lebih baik memiliki kesempatan belajar yang lebih besar.'"
               className="flex-1 min-w-[260px] bg-ink border border-line rounded-[10px] text-paper font-body text-sm p-3.5 resize-y min-h-[90px] focus:outline focus:outline-2 focus:outline-teal focus:outline-offset-2"
             />
             <Btn secondary onClick={addAndCheckClaim} disabled={!draftClaim.trim() || recheckingId !== null}>Periksa klaim</Btn>
@@ -403,19 +494,18 @@ export default function App() {
         {error && (
           <div className="bg-coral/10 border border-coral/30 text-paper rounded-[12px] p-4 mb-5 text-sm leading-relaxed">
             <strong>Fact check gagal:</strong> {error}
-            <div className="text-slate text-xs mt-2">Periksa GEMINI_API_KEY di Cloudflare Pages dan pastikan endpoint /api/gemini aktif.</div>
           </div>
         )}
 
         {loading && (
           <div className="bg-ink-2 border border-line rounded-[14px] p-4 mb-4">
-            <p className="text-slate font-mono text-xs m-0">Mencari sumber web, membandingkan bukti pendukung/penyangkal, lalu menyusun verdict...</p>
+            <p className="text-slate font-mono text-xs m-0">Menjalankan simulasi pemeriksaan klaim dan menyiapkan bukti contoh...</p>
           </div>
         )}
 
         {!loading && claims.length === 0 && !error && (
           <div className="bg-ink-2 border border-dashed border-line rounded-[14px] p-5 text-slate text-sm">
-            Belum ada hasil. Klik <strong>Jalankan Fact Check</strong> untuk memeriksa pernyataan dari catatan eksplorasimu.
+            Belum ada hasil. Klik <strong>Jalankan Fact Check</strong> untuk memulai simulasi pada isu yang dipilih.
           </div>
         )}
 
@@ -447,7 +537,7 @@ export default function App() {
 
                 {claim.sources.length > 0 ? (
                   <div className="mt-4">
-                    <div className="font-mono text-[10px] text-teal uppercase mb-2">Sumber yang dipakai</div>
+                    <div className="font-mono text-[10px] text-teal uppercase mb-2">Referensi simulasi</div>
                     <div className="space-y-2">
                       {claim.sources.map((source) => (
                         <a
@@ -465,12 +555,12 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-3 text-xs text-slate">Tidak ada sumber yang cukup kuat untuk ditampilkan. Klaim sebaiknya jangan dipakai sebagai bukti debat.</div>
+                  <div className="mt-3 text-xs text-slate">Belum ada referensi simulasi untuk klaim ini.</div>
                 )}
 
                 {claim.searchQueries?.length > 0 && (
                   <div className="mt-3 font-mono text-[10px] text-slate">
-                    Query web: {claim.searchQueries.join(' · ')}
+                    Query simulasi: {claim.searchQueries.join(' · ')}
                   </div>
                 )}
               </article>
@@ -486,7 +576,7 @@ export default function App() {
               <span><strong>{blockingClaims.length}</strong> perlu diperbaiki/diperiksa lagi</span>
             </div>
             <p className="text-xs text-slate mt-3 mb-0">
-              Klaim hanya dianggap lolos ke Argument Builder jika sudah terverifikasi/sebagian besar benar atau dikategorikan bukan klaim fakta.
+              Mode simulasi ini hanya untuk menguji alur. Pada versi produksi, verdict dan sumber harus berasal dari proses fact-check yang benar-benar memeriksa bukti.
             </p>
           </div>
         )}
