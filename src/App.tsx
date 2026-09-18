@@ -57,6 +57,10 @@ const FACT_CHECK_MODE = String((import.meta as any).env?.VITE_FACT_CHECK_MODE ||
   ? 'source-pack'
   : 'dummy';
 
+const AI_STAGE_MODE = String((import.meta as any).env?.VITE_AI_STAGE_MODE || 'dummy') === 'api'
+  ? 'api'
+  : 'dummy';
+
 const SAMPLE_ISSUES: Issue[] = [
   {
     id: 1,
@@ -221,6 +225,34 @@ function makeMockSourcePack(issue: Issue): Source[] {
   return issue.sources.map((source) => ({ ...source }));
 }
 
+const MOCK_EVIDENCE_BY_ISSUE: Record<number, string[]> = {
+  1: [
+    'Temuan simulasi: ketimpangan layanan air di perkotaan dapat muncul di antara kelompok dan wilayah dengan kondisi layanan yang berbeda.',
+    'Temuan simulasi: kondisi sosial-ekonomi dan kualitas/akses layanan perlu dibaca bersama saat menilai ketimpangan akses air.',
+  ],
+  2: [
+    'Temuan simulasi: kenaikan muka laut meningkatkan risiko genangan pesisir ketika paparan penduduk dan infrastruktur berada di wilayah rendah.',
+    'Temuan simulasi: risiko banjir pesisir dipengaruhi oleh kombinasi bahaya, paparan, dan kerentanan masyarakat.',
+  ],
+  3: [
+    'Temuan simulasi: keterbatasan konektivitas dan perangkat dapat menjadi hambatan bagi siswa untuk mengikuti pembelajaran digital.',
+    'Temuan simulasi: kesenjangan digital tidak hanya menyangkut akses perangkat, tetapi juga kualitas koneksi dan kemampuan menggunakan teknologi.',
+  ],
+  4: [
+    'Temuan simulasi: pengurangan plastik sekali pakai merupakan salah satu pendekatan untuk mengurangi timbulan sampah plastik dan polusi plastik.',
+    'Temuan simulasi: penggunaan kembali dan pengurangan plastik yang tidak perlu merupakan bagian dari strategi perubahan pola konsumsi yang lebih berkelanjutan.',
+  ],
+};
+
+function mockEvidenceForClaim(issue: Issue | null, claim: string): string {
+  const findings = MOCK_EVIDENCE_BY_ISSUE[issue?.id || 1] || [];
+  const sources = makeMockSourcePack(issue || SAMPLE_ISSUES[0]);
+  const sourceText = sources.slice(0, 2).map((source, index) =>
+    `${source.title}\nTemuan: ${findings[index] || 'Temuan simulasi yang relevan dengan klaim.'}\nSumber: ${source.url}`
+  ).join('\n\n');
+  return `Klaim yang diperiksa: ${claim}\n\n${sourceText}`;
+}
+
 async function mockFactCheck(payload: { claim?: string; text?: string; issue?: Issue | null; maxClaims?: number }): Promise<ClaimResult[]> {
   await fakeDelay();
   const issueId = payload.issue?.id || 1;
@@ -366,6 +398,59 @@ export default function App() {
     ]);
   }, [currentStage, debateLog.length, argument.claim]);
 
+  function mockArgumentReview(issue: Issue | null, arg: Argument) {
+    const evidence = arg.evidence.trim();
+    const hasUrl = /https?:\/\//i.test(evidence);
+    const hasReason = arg.reason.trim().length >= 30;
+    const claim = arg.claim.trim();
+    const findings = MOCK_EVIDENCE_BY_ISSUE[issue?.id || 1] || [];
+    const sources = makeMockSourcePack(issue || SAMPLE_ISSUES[0]).slice(0, 2);
+
+    if (claim && hasReason && hasUrl) {
+      const evidenceLines = sources.map((source, index) =>
+        `${source.title}: ${findings[index] || source.summary || 'Temuan simulasi yang relevan dengan klaim.'}`
+      );
+
+      return [
+        'Review AI',
+        '',
+        '1. Relevansi bukti',
+        'Bukti sudah memiliki sumber yang jelas dan dapat dihubungkan dengan klaim. Pada mode simulasi, temuan berikut digunakan sebagai bukti pendukung:',
+        `• ${evidenceLines[0]}`,
+        `• ${evidenceLines[1]}`,
+        '',
+        '2. Hubungan klaim dan alasan',
+        'Alasan menjelaskan mekanisme yang membuat klaim masuk akal dan masih berada dalam ruang lingkup klaim.',
+        '',
+        '3. Catatan penting',
+        'Jangan menarik kesimpulan yang lebih luas daripada temuan sumber. Pada versi produksi, temuan simulasi harus diganti dengan kutipan atau data nyata dari Source Pack.',
+        '',
+        '4. Kesimpulan',
+        'Argumen sudah cukup koheren untuk lanjut ke Uji Argumen. Tetap pertahankan batas klaim sesuai bukti yang tersedia.',
+      ].join('\n');
+    }
+
+    return [
+      'Review AI',
+      '',
+      'Argumen belum siap direview penuh.',
+      'Lengkapi klaim dan alasan, lalu masukkan minimal satu sumber dengan URL pada bagian bukti.',
+    ].join('\n');
+  }
+
+  function mockDebateReply(round: number) {
+    const replies = [
+      'Sanggahan: bukti yang kamu sebutkan masih umum. Jelaskan bagian mana dari bukti tersebut yang paling langsung mendukung klaimmu dan hindari menyimpulkan lebih jauh dari data.',
+      'Pertanyaan penguji: indikator apa yang dapat digunakan untuk membedakan pengaruh faktor yang kamu sebut dari faktor lain? Jelaskan batas bukti yang kamu miliki.',
+      'Sanggahan terakhir: nyatakan dengan jelas apa yang dapat dibuktikan oleh sumbermu dan apa yang masih menjadi keterbatasan. Pertahankan hanya bagian argumen yang benar-benar didukung bukti.'
+    ];
+    return replies[Math.max(0, Math.min(replies.length - 1, round - 1))];
+  }
+
+  function mockSolutionEvaluation() {
+    return '1. Kesesuaian masalah\nSolusi relevan dengan isu yang dibahas dan menjawab masalah yang telah diidentifikasi.\n\n2. Kelayakan pelaksanaan\nSolusi cukup realistis jika dilakukan bertahap dan disesuaikan dengan sumber daya yang tersedia.\n\n3. Pihak yang terlibat\nPemerintah, pengelola layanan, sekolah/masyarakat, dan pihak pendukung perlu memiliki peran yang jelas.\n\n4. Indikator keberhasilan\nGunakan ukuran yang dapat diamati, seperti jumlah penerima manfaat, tingkat penggunaan, biaya, kualitas layanan, atau perubahan jumlah sampah.\n\n5. Risiko utama\nRisiko dapat berupa keterbatasan anggaran, perubahan kebiasaan, fasilitas yang belum tersedia, atau partisipasi yang rendah.\n\n6. Kesimpulan dan satu perbaikan prioritas\nSolusi dapat dilanjutkan dengan indikator keberhasilan yang lebih terukur dan pembagian tanggung jawab yang lebih spesifik.';
+  }
+
   async function callAPI(action: string, payload: unknown, fallbackData?: unknown) {
     try {
       const response = await fetch('/api/gemini', {
@@ -453,7 +538,9 @@ export default function App() {
     setArgument({
       claim: claim.claim,
       reason: '',
-      evidence: claim.sources.map((source) => `${source.title} — ${source.url}`).join('\n'),
+      evidence: FACT_CHECK_MODE === 'dummy'
+        ? mockEvidenceForClaim(selectedIssue, claim.claim)
+        : claim.sources.map((source) => `${source.title} — ${source.url}`).join('\n'),
     });
     setReview('');
     goTo(4);
@@ -461,10 +548,16 @@ export default function App() {
 
   async function getReview() {
     setReviewLoading(true);
-    const fallback = 'Perjelas hubungan antara klaim, alasan, dan bukti. Gunakan sumber yang spesifik dan jelaskan temuan apa dari sumber tersebut yang benar-benar mendukung klaim.';
     try {
-      const reply = await callAPI('reviewArgument', argument, fallback);
-      setReview(cleanAiText(String(reply || fallback)));
+      if (AI_STAGE_MODE === 'dummy') {
+        await fakeDelay();
+        setReview(mockArgumentReview(selectedIssue, argument));
+      } else {
+        const reply = await callAPI('reviewArgument', argument);
+        setReview(cleanAiText(String(reply || 'AI Reviewer tidak memberikan hasil.')));
+      }
+    } catch (error) {
+      setReview(error instanceof Error ? `AI Reviewer gagal: ${error.message}` : 'AI Reviewer gagal dijalankan.');
     } finally {
       setReviewLoading(false);
     }
@@ -479,11 +572,18 @@ export default function App() {
     setDebateInput('');
     setDebateLoading(true);
 
-    const fallback = 'Coba tunjukkan bagian bukti yang paling langsung mendukung klaimmu dan jelaskan batasan bukti tersebut.';
     try {
-      const reply = await callAPI('debate', { msg: message, arg: argument, round: sparringRound + 1 }, fallback);
-      setDebateLog([...history, { who: 'ai', text: cleanAiText(String(reply || fallback)) }]);
+      let reply = '';
+      if (AI_STAGE_MODE === 'dummy') {
+        await fakeDelay();
+        reply = mockDebateReply(sparringRound + 1);
+      } else {
+        reply = cleanAiText(String(await callAPI('debate', { msg: message, arg: argument, round: sparringRound + 1 })));
+      }
+      setDebateLog([...history, { who: 'ai', text: reply }]);
       setSparringRound((previous) => previous + 1);
+    } catch (error) {
+      setDebateLog([...history, { who: 'ai', text: error instanceof Error ? `Sparring gagal: ${error.message}` : 'Sparring gagal dijalankan.' }]);
     } finally {
       setDebateLoading(false);
     }
@@ -492,11 +592,16 @@ export default function App() {
   async function getSolutionEvaluation() {
     if (!solution.trim()) return;
     setEvalLoading(true);
-    const fallback = '1. Kesesuaian masalah: solusi menjawab isu yang dipilih.\n2. Kelayakan: pihak pelaksana dan kebutuhan sumber daya perlu dipastikan.\n3. Pihak terlibat: pemerintah, penyedia layanan, dan masyarakat.\n4. Indikator: tetapkan hasil yang dapat diukur.\n5. Risiko: perhatikan biaya, koordinasi, dan keberlanjutan.\nKesimpulan: solusi dapat diperbaiki dengan indikator yang lebih spesifik.';
     try {
-      const reply = await callAPI('evaluateSolution', { solution }, fallback);
-      const cleaned = cleanAiText(String(reply || fallback));
-      setEvalReply(cleaned);
+      if (AI_STAGE_MODE === 'dummy') {
+        await fakeDelay();
+        setEvalReply(mockSolutionEvaluation());
+      } else {
+        const reply = await callAPI('evaluateSolution', { solution });
+        setEvalReply(cleanAiText(String(reply || 'AI Evaluator tidak memberikan hasil.')));
+      }
+    } catch (error) {
+      setEvalReply(error instanceof Error ? `AI Evaluator gagal: ${error.message}` : 'AI Evaluator gagal dijalankan.');
     } finally {
       setEvalLoading(false);
     }
@@ -690,7 +795,7 @@ export default function App() {
 
           <InputField label="Klaim" value={argument.claim} onChange={(event) => setArgument({ ...argument, claim: event.target.value })} placeholder="Apa yang kamu nyatakan?" />
           <InputField label="Alasan" value={argument.reason} onChange={(event) => setArgument({ ...argument, reason: event.target.value })} placeholder="Mengapa klaim itu penting/masuk akal?" />
-          <InputField label="Bukti" isTextarea value={argument.evidence} onChange={(event) => setArgument({ ...argument, evidence: event.target.value })} placeholder="Masukkan temuan, sumber, atau penjelasan yang mendukung." />
+          <InputField label="Bukti" isTextarea value={argument.evidence} onChange={(event) => setArgument({ ...argument, evidence: event.target.value })} placeholder="Masukkan temuan spesifik dari sumber, lalu sertakan URL sumber." />
 
           <div className="flex gap-3 flex-wrap mt-7 mb-4"><Btn secondary onClick={getReview} disabled={!canReviewArgument || reviewLoading}>{reviewLoading ? 'Mereview...' : 'Minta review AI'}</Btn></div>
 
