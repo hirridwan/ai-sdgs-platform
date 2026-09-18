@@ -1,0 +1,5 @@
+name = "ai-sdgs-platform"
+pages_build_output_dir = "./dist"
+
+[placement]
+region = "gcp:us-east4"
