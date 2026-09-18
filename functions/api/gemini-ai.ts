@@ -24,7 +24,7 @@ type RawClaim = {
 };
 
 function getModel(env: any) {
-  return env.GEMINI_AI_MODEL || env.GEMINI_MODEL || DEFAULT_MODEL;
+  return env.GEMINI_MODEL || DEFAULT_MODEL;
 }
 
 function cleanText(text: string) {
