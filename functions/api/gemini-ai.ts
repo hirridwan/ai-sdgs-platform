@@ -342,7 +342,7 @@ Tulis tepat 6 bagian:
 Setiap bagian 1-3 kalimat. Maksimal 360 kata.
 Tanpa Markdown bold atau heading #.
 `.trim();
-      maxOutputTokens = 2200;
+      maxOutputTokens = 1600;
     } else {
       return json({ error: `Action tidak dikenal: ${action}` }, 400);
     }
@@ -352,7 +352,12 @@ Tanpa Markdown bold atau heading #.
       prompt,
       structured: false,
       maxOutputTokens,
-      thinkingLevel: action === 'debate' ? 'minimal' : undefined,
+      thinkingLevel:
+        action === 'debate'
+          ? 'minimal'
+          : action === 'reviewArgument' || action === 'evaluateSolution'
+            ? 'low'
+            : undefined,
     });
 
     return json({ result: cleanText(text) }, 200);
