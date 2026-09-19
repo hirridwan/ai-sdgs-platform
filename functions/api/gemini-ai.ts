@@ -70,6 +70,7 @@ async function generateContent(params: {
   prompt: string;
   structured?: boolean;
   maxOutputTokens?: number;
+  thinkingLevel?: 'minimal' | 'low' | 'medium' | 'high';
 }) {
   const apiKey = params.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY belum diatur di environment Cloudflare Pages.');
@@ -80,6 +81,13 @@ async function generateContent(params: {
     generationConfig: {
       temperature: params.structured ? 0.1 : 0.4,
       maxOutputTokens: params.maxOutputTokens ?? (params.structured ? 5000 : 2200),
+      ...(params.thinkingLevel
+        ? {
+            thinkingConfig: {
+              thinkingLevel: params.thinkingLevel,
+            },
+          }
+        : {}),
     },
   };
 
@@ -300,7 +308,7 @@ Jika menggunakan fakta yang mungkin perlu diperiksa, sarankan siswa memverifikas
 Maksimal 130 kata.
 Tanpa Markdown.
 `.trim();
-      maxOutputTokens = 850;
+      maxOutputTokens = 1200;
     } else if (action === 'evaluateSolution') {
       prompt = `
 Anda adalah AI Evaluator untuk proyek pembelajaran AI × SDGs.
@@ -344,6 +352,7 @@ Tanpa Markdown bold atau heading #.
       prompt,
       structured: false,
       maxOutputTokens,
+      thinkingLevel: action === 'debate' ? 'minimal' : undefined,
     });
 
     return json({ result: cleanText(text) }, 200);
