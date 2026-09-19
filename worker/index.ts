@@ -7,7 +7,7 @@ type WorkerEnv = {
 };
 
 export default {
-  async fetch(request: Request, env: WorkerEnv, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: WorkerEnv): Promise<Response> {
     const url = new URL(request.url);
 
     // Backend V2: /api/gemini-ai
