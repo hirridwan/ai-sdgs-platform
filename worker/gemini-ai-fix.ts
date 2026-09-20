@@ -44,54 +44,6 @@ function parseJson<T>(text: string): T {
   return JSON.parse(cleaned.slice(start));
 }
 
-type GroundingSource = {
-  title: string;
-  url: string;
-  domain: string;
-  quality: 'tinggi' | 'sedang' | 'lainnya';
-  summary?: string;
-};
-
-type GroundingInfo = {
-  sources: GroundingSource[];
-  searchQueries: string[];
-};
-
-function extractGrounding(data: any): GroundingInfo {
-  const metadata = data?.candidates?.[0]?.groundingMetadata;
-  const chunks = Array.isArray(metadata?.groundingChunks) ? metadata.groundingChunks : [];
-  const searchQueries = Array.isArray(metadata?.webSearchQueries)
-    ? metadata.webSearchQueries.map((value: any) => String(value)).filter(Boolean)
-    : [];
-
-  const seen = new Set<string>();
-  const sources: GroundingSource[] = [];
-
-  for (const chunk of chunks) {
-    const web = chunk?.web;
-    const url = String(web?.uri || '').trim();
-    if (!url || seen.has(url)) continue;
-
-    let domain = url;
-    try {
-      domain = new URL(url).hostname.replace(/^www\\./i, '');
-    } catch {
-      // Keep the raw URL as a fallback domain label.
-    }
-
-    seen.add(url);
-    sources.push({
-      title: String(web?.title || domain),
-      url,
-      domain,
-      quality: 'lainnya',
-      summary: 'Sumber web yang digunakan Gemini melalui Google Search grounding.',
-    });
-  }
-
-  return { sources, searchQueries };
-}
-
 function makeClaimSchema() {
   return {
     type: 'ARRAY',
@@ -119,15 +71,13 @@ async function generateContent(params: {
   structured?: boolean;
   maxOutputTokens?: number;
   thinkingLevel?: 'minimal' | 'low' | 'medium' | 'high';
-  useGoogleSearch?: boolean;
 }) {
   const apiKey = params.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('GEMINI_API_KEY belum diatur di environment Cloudflare Worker.');
+  if (!apiKey) throw new Error('GEMINI_API_KEY belum diatur di environment Cloudflare Pages.');
 
   const model = getModel(params.env);
   const body: any = {
     contents: [{ role: 'user', parts: [{ text: params.prompt }] }],
-    ...(params.useGoogleSearch ? { tools: [{ google_search: {} }] } : {}),
     generationConfig: {
       temperature: params.structured ? 0.1 : 0.4,
       maxOutputTokens: params.maxOutputTokens ?? (params.structured ? 5000 : 2200),
@@ -181,12 +131,13 @@ async function factCheckFromModel(payload: any) {
 Anda adalah AI reviewer fakta untuk pembelajaran siswa SMA dalam proyek AI × SDGs.
 
 PENTING:
-- Anda memiliki akses Google Search grounding pada tugas ini. Gunakan pencarian web bila diperlukan untuk memeriksa klaim faktual.
-- Prioritaskan sumber primer dan institusi kredibel seperti pemerintah, lembaga statistik, PBB/WHO/UNESCO/OECD/ILO/IEA, universitas, dan publikasi ilmiah bila relevan.
-- Jangan membuat URL atau sumber yang tidak benar-benar tersedia dari hasil pencarian.
-- Jangan menganggap sebuah klaim benar hanya karena terdengar masuk akal.
-- Jika bukti web tidak cukup atau sumber saling bertentangan, gunakan verdict "unverifiable" atau jelaskan keterbatasannya.
+- Anda TIDAK memiliki akses internet pada tugas ini.
+- Jangan mengklaim telah melakukan pencarian web.
+- Jangan membuat atau mencantumkan URL/sumber seolah-olah baru ditemukan.
+- Gunakan pengetahuan internal model hanya sebagai penilaian awal.
+- Jika sebuah fakta memerlukan verifikasi sumber eksternal atau Anda tidak cukup yakin, gunakan verdict "unverifiable".
 - Bedakan fakta, opini, dan prediksi.
+- Jangan menganggap sebuah klaim benar hanya karena terdengar masuk akal.
 
 KONTEKS MOSI TERPILIH
 SDG: ${issue?.sdg || '-'}
@@ -199,19 +150,17 @@ INPUT SISWA:
 ${text}
 
 Pecah menjadi maksimal ${maxClaims} klaim atomik.
-Untuk setiap klaim faktual, gunakan bukti web yang ditemukan jika tersedia dan jelaskan keterbatasannya.
+Untuk setiap klaim faktual, berikan penilaian berbasis pengetahuan model dan jelaskan keterbatasannya.
+Jangan menulis sumber web pada output.
 Keluarkan HANYA JSON ARRAY sesuai schema.
-
 `.trim();
 
-  const { text: rawText, data } = await generateContent({
+  const { text: rawText } = await generateContent({
     env: payload.__env,
     prompt,
     structured: true,
     maxOutputTokens: 5000,
-    useGoogleSearch: true,
   });
-  const grounding = extractGrounding(data);
 
   let parsed: RawClaim[];
   try {
@@ -234,9 +183,9 @@ Keluarkan HANYA JSON ARRAY sesuai schema.
       verdict,
       confidence,
       explanation: item.explanation,
-      caveat: item.caveat || 'Penilaian ini menggunakan Google Search grounding; tetap periksa sumber asli sebelum menjadikannya bukti debat.',
-      sources: grounding.sources,
-      searchQueries: grounding.searchQueries,
+      caveat: item.caveat || 'Penilaian ini berasal dari pengetahuan model, bukan verifikasi web langsung.',
+      sources: [],
+      searchQueries: [],
       checkedAt,
     };
   });
@@ -248,7 +197,8 @@ async function exploreIssue(context: any, payload: any) {
   const prompt = `
 Anda adalah AI Explorer untuk pembelajaran siswa SMA pada proyek AI × SDGs.
 
-Gunakan Google Search grounding bila diperlukan untuk melengkapi konteks dan menemukan informasi web yang relevan. Gunakan hasil web sebagai bahan penelitian awal, bukan sebagai naskah debat siap pakai. Jangan menentukan pemenang.
+Anda sedang bekerja tanpa web search dan tanpa Source Pack. Gunakan kemampuan/pengetahuan internal model untuk membantu siswa memahami isu sebagai titik awal penelitian.
+Jangan membuat naskah debat dan jangan menentukan pemenang.
 
 DATA MOSI TERPILIH
 SDG: ${issue?.sdg || '-'}
@@ -271,20 +221,13 @@ Gunakan struktur:
 
 Konteks dasar harus netral. Jika posisi siswa tersedia, arahkan pertanyaan pemantik agar membantu penelitian posisi tersebut tetapi tetap tampilkan hal yang dapat mendukung maupun melemahkannya.
 Semua isi harus langsung relevan dengan mosi terpilih. Jangan membawa isu dari mosi lain.
-Untuk fakta yang berasal dari web, prioritaskan sumber primer/kredibel dan jangan mengada-adakan sumber. Jika sumber yang ditemukan berbeda atau bukti terbatas, nyatakan keterbatasannya.
+Jika menyebut fakta yang mungkin berubah atau memerlukan verifikasi, beri tanda bahwa siswa perlu memeriksanya pada sumber eksternal.
 Maksimal 500 kata.
 Tanpa Markdown bold atau heading #.
 `.trim();
 
-  const { text, data } = await generateContent({
-    env: context.env,
-    prompt,
-    structured: false,
-    maxOutputTokens: 2800,
-    useGoogleSearch: true,
-  });
-  const grounding = extractGrounding(data);
-  return { text: cleanText(text), ...grounding };
+  const { text } = await generateContent({ env: context.env, prompt, structured: false, maxOutputTokens: 2800 });
+  return cleanText(text);
 }
 
 export async function onRequestPost(context: any) {
@@ -307,7 +250,7 @@ export async function onRequestPost(context: any) {
 
     if (action === 'explore') {
       const result = await exploreIssue(context, payload || {});
-      return json({ result: result.text, sources: result.sources, searchQueries: result.searchQueries }, 200);
+      return json({ result }, 200);
     }
 
     if (action === 'reviewArgument') {

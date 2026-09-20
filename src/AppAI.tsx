@@ -58,7 +58,7 @@ const STAGES: { id: StageId; label: string; short: string }[] = [
   { id: 'impact', label: 'Impact', short: '07' },
 ];
 
-const FACT_CHECK_MODE: 'ai-knowledge' | 'dummy' = 'ai-knowledge';
+const FACT_CHECK_MODE: 'ai-web-search' | 'dummy' = 'ai-web-search';
 
 const AI_STAGE_MODE: 'api' | 'dummy' = 'api';
 
@@ -632,6 +632,7 @@ export default function App() {
   const [explorerReply, setExplorerReply] = useState('');
   const [explorerLoading, setExplorerLoading] = useState(false);
   const [explorerIssueId, setExplorerIssueId] = useState<number | null>(null);
+  const [explorerSources, setExplorerSources] = useState<Source[]>([]);
 
   const [claims, setClaims] = useState<ClaimResult[]>([]);
   const [factCheckLoading, setFactCheckLoading] = useState(false);
@@ -673,6 +674,7 @@ export default function App() {
     setExploration('');
     setExplorerReply('');
     setExplorerIssueId(null);
+    setExplorerSources([]);
     setClaims([]);
     setDraftClaim('');
     setFactCheckError(null);
@@ -692,9 +694,10 @@ export default function App() {
     const loadExplorer = async () => {
       setExplorerLoading(true);
       try {
-        const result = await callAPI('explore', { issue: selectedIssue, position: debatePosition, focus: debatePosition === 'PRO' ? selectedIssue.proFocus : selectedIssue.contraFocus, starterQuestions: selectedIssue.starterQuestions });
+        const response = await callAPI('explore', { issue: selectedIssue, position: debatePosition, focus: debatePosition === 'PRO' ? selectedIssue.proFocus : selectedIssue.contraFocus, starterQuestions: selectedIssue.starterQuestions }, true);
         if (!cancelled) {
-          setExplorerReply(cleanAiText(String(result || 'AI Explorer tidak memberikan hasil.')));
+          setExplorerReply(cleanAiText(String(response?.result || 'AI Explorer tidak memberikan hasil.')));
+          setExplorerSources(Array.isArray(response?.sources) ? response.sources : []);
           setExplorerIssueId(selectedIssue.id);
         }
       } catch (error) {
@@ -772,7 +775,7 @@ export default function App() {
     return `1. Kesesuaian masalah\nSolusi relevan dengan masalah pada ${issueContext} dan perlu menunjukkan hubungan yang jelas antara masalah, tindakan, serta hasil yang diharapkan.\n\n2. Kelayakan pelaksanaan\nSolusi cukup realistis jika dilakukan bertahap dan disesuaikan dengan sumber daya, waktu, serta kondisi pihak yang terlibat.\n\n3. Pihak yang terlibat\nTentukan pihak yang memiliki kewenangan, pelaksana, penerima manfaat, serta pihak pendukung sesuai konteks mosi.\n\n4. Indikator keberhasilan\nGunakan ukuran yang dapat diamati, misalnya perubahan akses/partisipasi, penggunaan layanan, biaya, emisi, hasil belajar, keselamatan digital, kualitas konsumsi, atau indikator lain yang relevan dengan isu.\n\n5. Risiko utama\nPerhatikan keterbatasan anggaran, perubahan kebiasaan, infrastruktur, ketimpangan akses, dampak tidak langsung, atau partisipasi yang rendah.\n\n6. Kesimpulan dan satu perbaikan prioritas\nSolusi dapat dilanjutkan setelah indikator keberhasilan dan pembagian tanggung jawab dibuat lebih spesifik.`;
   }
 
-  async function callAPI(action: string, payload: unknown) {
+  async function callAPI(action: string, payload: unknown, withMeta = false) {
     const response = await fetch('/api/gemini-ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -785,7 +788,7 @@ export default function App() {
       throw error;
     }
     if (data?.result === undefined) throw new Error('Respons API tidak memiliki field result.');
-    return data.result;
+    return withMeta ? data : data.result;
   }
 
   function goTo(index: number) {
@@ -1000,6 +1003,21 @@ export default function App() {
             <div className="font-mono text-[11px] text-[#6C5CE7] uppercase mb-1.5">AI · Explorer</div>
             <p className="m-0 text-sm leading-relaxed text-[#1D2030] whitespace-pre-line">{explorerLoading ? 'AI sedang menyiapkan eksplorasi...' : explorerReply}</p>
           </div>
+          {explorerSources.length > 0 && (
+            <div className="bg-white/90 border border-[#E6E7EF] rounded-[20px] p-5 mb-6">
+              <div className="font-mono text-[10px] text-[#6C5CE7] uppercase tracking-[0.16em] mb-2">Sumber web yang digunakan</div>
+              <div className="space-y-2">
+                {explorerSources.map((source) => (
+                  <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="block bg-[#F6F7FB]/70 border border-[#E6E7EF] rounded-[16px] p-4 hover:border-[#6C5CE7]/60 hover:bg-white/80 transition-colors">
+                    <div className="font-mono text-[10px] text-[#70758B] uppercase">{source.domain}{source.year ? ` · ${source.year}` : ''}{source.scope ? ` · ${source.scope}` : ''}</div>
+                    <div className="text-sm text-[#1D2030] mt-1">{source.title}</div>
+                    {source.summary && <div className="text-xs text-[#70758B] mt-1 leading-relaxed">{source.summary}</div>}
+                    <div className="text-[11px] text-[#6C5CE7] break-all mt-1">{source.url}</div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
           <InputField label="Catatan eksplorasimu" isTextarea value={exploration} onChange={(event) => setExploration(event.target.value)} placeholder="Tuliskan apa yang kamu pahami dan apa yang ingin kamu buktikan. Jangan sekadar menyalin jawaban AI." />
           <div className="flex gap-3 flex-wrap mt-8">
             <Btn secondary onClick={() => goTo(1)}>← Kembali</Btn>
@@ -1021,9 +1039,9 @@ export default function App() {
               <strong>MODE SIMULASI:</strong> hasil belum merupakan verifikasi web nyata. Gunakan tahap ini untuk menguji alur klaim → verdict → sumber → Argument Builder.
             </div>
           )}
-          {FACT_CHECK_MODE === 'ai-knowledge' && (
+          {FACT_CHECK_MODE === 'ai-web-search' && (
             <div className="bg-[#6C5CE7]/6 border border-[#6C5CE7]/15 rounded-[20px] p-4 mb-6 text-sm leading-6 text-[#1D2030]">
-              <strong>MODE AI KNOWLEDGE:</strong> Gemini menilai klaim berdasarkan pengetahuan internal model. Hasil ini merupakan penilaian awal dan fakta penting tetap perlu diverifikasi dengan sumber eksternal.
+              <strong>MODE AI + WEB SEARCH:</strong> Gemini menggunakan Google Search untuk mencari bukti web yang relevan dan menampilkan referensi yang digunakan. Tetap buka sumber asli sebelum menjadikannya bukti debat.
             </div>
           )}
 
@@ -1073,7 +1091,7 @@ export default function App() {
                   {claim.caveat && <div className="bg-[#F2A93B]/10 border border-[#F2A93B]/20 rounded-[10px] p-3 mt-3 text-sm leading-relaxed"><strong>Catatan konteks:</strong> {claim.caveat}</div>}
                   {claim.sources.length > 0 && (
                     <div className="mt-4">
-                      <div className="font-mono text-[10px] text-[#6C5CE7] uppercase tracking-[0.16em] mb-2">{FACT_CHECK_MODE === 'dummy' ? 'Referensi simulasi' : 'Penilaian AI'}</div>
+                      <div className="font-mono text-[10px] text-[#6C5CE7] uppercase tracking-[0.16em] mb-2">{FACT_CHECK_MODE === 'dummy' ? 'Referensi simulasi' : 'Sumber web yang digunakan'}</div>
                       <div className="space-y-2">
                         {claim.sources.map((source) => (
                           <a key={`${claim.id}-${source.url}`} href={source.url} target="_blank" rel="noreferrer" className="block bg-[#F6F7FB]/70 border border-[#E6E7EF] rounded-[16px] p-4 hover:border-[#6C5CE7]/60 hover:bg-white/80 transition-colors">
@@ -1086,7 +1104,7 @@ export default function App() {
                       </div>
                     </div>
                   )}
-                  {claim.searchQueries.length > 0 && <div className="mt-3 font-mono text-[10px] text-[#70758B]">Query simulasi: {claim.searchQueries.join(' · ')}</div>}
+                  {claim.searchQueries.length > 0 && <div className="mt-3 font-mono text-[10px] text-[#70758B]">Query pencarian: {claim.searchQueries.join(' · ')}</div>}
                 </article>
               );
             })}
@@ -1253,16 +1271,16 @@ export default function App() {
             </div>
             <div className="min-w-0 max-md:hidden">
               <div className="font-display text-sm font-semibold tracking-[-0.01em]">AI × SDGs</div>
-              <div className="mt-0.5 text-[11px] text-[#8A8EA2]">AI Knowledge Mode</div>
+              <div className="mt-0.5 text-[11px] text-[#8A8EA2]">AI + Web Search Mode</div>
             </div>
           </div>
 
           <div className="mb-6 rounded-[18px] bg-[#F7F5FF] px-4 py-3.5 max-md:hidden">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6C5CE7]">AI Knowledge</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6C5CE7]">AI + Web Search</span>
               <span className="h-2 w-2 rounded-full bg-[#6C5CE7] shadow-[0_0_0_4px_rgba(108,92,231,0.10)]" />
             </div>
-            <p className="mt-2 text-[11px] leading-5 text-[#73778D]">Sumber dicari langsung oleh AI dari internet.</p>
+            <p className="mt-2 text-[11px] leading-5 text-[#73778D]">Gemini dapat mencari sumber web langsung saat tahap penelitian dan fact-check.</p>
           </div>
 
           <div className="hidden border-t border-[#E6E7EF] pt-4 max-md:flex max-md:flex-1 max-md:gap-1 max-md:overflow-x-auto max-md:border-t-0 max-md:pt-0">
