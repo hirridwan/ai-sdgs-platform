@@ -1,3 +1,23 @@
+/**
+ * WORKER ROUTER — AI × SDGs Platform
+ *
+ * Fungsi:
+ * - Menjadi pintu masuk utama Cloudflare Worker.
+ * - Mengarahkan request API ke backend yang sesuai.
+ *
+ * Route:
+ * - POST /api/gemini
+ *   → V1 — Source Pack
+ *   → worker/gemini.ts
+ *
+ * - POST /api/gemini-ai
+ *   → V2 — Gemini AI + Google Search
+ *   → worker/gemini-ai.ts
+ *
+ * Selain route API, request lainnya diteruskan ke
+ * frontend React/Vite melalui ASSETS.
+ */
+
 import { onRequestPost as handleGemini } from './gemini';
 import { onRequestPost as handleGeminiAi } from './gemini-ai';
 

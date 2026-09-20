@@ -1,3 +1,18 @@
+/**
+ * BACKEND V1 — SOURCE PACK
+ *
+ * Fungsi:
+ * - Menangani API untuk Version 1 platform.
+ * - Menggunakan Source Pack sebagai sumber bukti.
+ * - Tidak menggunakan Google Search secara langsung.
+ *
+ * Endpoint:
+ * - POST /api/gemini
+ *
+ * Dipanggil oleh:
+ * - Frontend V1 → src/App.tsx
+ */
+
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const DEFAULT_MODEL = 'gemini-3.6-flash';
 

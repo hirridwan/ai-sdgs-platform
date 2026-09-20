@@ -1,3 +1,25 @@
+/**
+ * BACKEND V2 — AI + GOOGLE SEARCH
+ *
+ * Fungsi:
+ * - Menangani API untuk Version 2 platform.
+ * - Menggunakan Gemini API dengan model Gemini 3.6 Flash.
+ * - Menggunakan Google Search grounding pada tahap:
+ *   1. AI Exploration
+ *   2. Fact Check
+ *
+ * Tahap berikut tetap menggunakan pengetahuan model:
+ *   - Argument Review
+ *   - Debate / Sparring
+ *   - Solution Evaluator
+ *
+ * Endpoint:
+ * - POST /api/gemini-ai
+ *
+ * Dipanggil oleh:
+ * - Frontend V2 → src/AppAI.tsx
+ */
+
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const DEFAULT_MODEL = 'gemini-3.6-flash';
 

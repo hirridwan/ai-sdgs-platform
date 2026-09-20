@@ -1,3 +1,21 @@
+/**
+ * FRONTEND V1 — SOURCE PACK
+ *
+ * Fungsi:
+ * - Menjadi antarmuka utama Version 1 AI × SDGs Platform.
+ * - Menggunakan alur pembelajaran berbasis Source Pack.
+ * - Menampilkan Issue Bank, AI Exploration, Fact Check,
+ *   Argument Builder, Debate Preparation, Solution Lab, dan Impact.
+ *
+ * Backend:
+ * - POST /api/gemini
+ * - Backend: worker/gemini.ts
+ *
+ * Catatan:
+ * - Versi ini menggunakan Source Pack sebagai basis evidence.
+ * - Tidak menggunakan Google Search secara langsung.
+ */
+
 import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent, ReactNode } from 'react';
 

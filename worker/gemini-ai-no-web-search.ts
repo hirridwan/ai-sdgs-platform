@@ -1,3 +1,14 @@
+/**
+ * BACKUP BACKEND V2 — TANPA GOOGLE SEARCH
+ *
+ * Fungsi:
+ * - Backup dari backend V2 sebelum menggunakan Web Search.
+ * - Menggunakan Gemini API tanpa Google Search grounding.
+ *
+ * File ini TIDAK digunakan sebagai route utama.
+ * Dipertahankan sebagai backup/fallback jika diperlukan.
+ */
+
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const DEFAULT_MODEL = 'gemini-3.6-flash';
 

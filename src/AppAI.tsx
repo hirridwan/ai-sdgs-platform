@@ -1,3 +1,30 @@
+/**
+ * FRONTEND V2 — AI + GOOGLE SEARCH
+ *
+ * Fungsi:
+ * - Menjadi antarmuka Version 2 AI × SDGs Platform.
+ * - Menggunakan Gemini API sebagai AI utama.
+ * - Menggunakan Google Search grounding untuk pencarian web
+ *   pada tahap AI Exploration dan Fact Check.
+ *
+ * Backend:
+ * - POST /api/gemini-ai
+ * - Backend: worker/gemini-ai.ts
+ *
+ * Alur:
+ * 1. Issue Bank
+ * 2. AI Exploration
+ * 3. Fact Check
+ * 4. Argument Builder
+ * 5. Debate Preparation
+ * 6. Solution Lab
+ * 7. Impact
+ *
+ * Catatan:
+ * - AI berfungsi sebagai alat bantu riset dan persiapan.
+ * - Debat resmi tetap dilakukan oleh siswa PRO dan KONTRA.
+ */
+
 import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent, ReactNode } from 'react';
 

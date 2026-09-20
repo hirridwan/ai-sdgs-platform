@@ -1,3 +1,22 @@
+/**
+ * BACKUP FRONTEND V2 — TANPA GOOGLE SEARCH
+ *
+ * Fungsi:
+ * - Backup dari Version 2 sebelum menggunakan Google Search grounding.
+ * - Tetap menggunakan Gemini API untuk fitur AI.
+ *
+ * Status:
+ * - Bukan frontend utama.
+ * - Dipertahankan sebagai backup/fallback.
+ *
+ * Backend utama versi backup:
+ * - worker/gemini-ai-no-web-search.ts
+ *
+ * Catatan:
+ * - File ini tidak menggunakan Google Search grounding.
+ * - Jangan dihapus selama versi AI + Web Search belum dianggap final.
+ */
+
 import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent, ReactNode } from 'react';
 
