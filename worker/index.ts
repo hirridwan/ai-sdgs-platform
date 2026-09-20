@@ -1,3 +1,4 @@
+import { onRequestPost as handleGemini } from './gemini';
 import { onRequestPost as handleGeminiAi } from './gemini-ai';
 
 type WorkerEnv = {
@@ -9,6 +10,22 @@ type WorkerEnv = {
 export default {
   async fetch(request: Request, env: WorkerEnv): Promise<Response> {
     const url = new URL(request.url);
+
+    // Backend V1: /api/gemini
+    if (url.pathname === '/api/gemini') {
+      if (request.method !== 'POST') {
+        return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+          status: 405,
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            Allow: 'POST',
+          },
+        });
+      }
+
+      // Adapt the existing Pages Function context to the Worker handler.
+      return handleGemini({ request, env });
+    }
 
     // Backend V2: /api/gemini-ai
     if (url.pathname === '/api/gemini-ai') {
