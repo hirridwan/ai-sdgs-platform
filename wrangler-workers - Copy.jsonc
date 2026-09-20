@@ -13,7 +13,7 @@
     "mode": "smart"
   },
 
-  "vars": {
-    "GEMINI_API_KEY": "AQ.Ab8RN6LqAJqURbeBjufAlxcuIJAn9zyLLuid6UQtGNSXD8r89Q"
+  "secrets": {
+    "required": ["GEMINI_API_KEY"]
   }
 }
