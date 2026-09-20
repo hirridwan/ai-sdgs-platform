@@ -1,3 +1,4 @@
+import { fetchAI } from './team/api';
 /**
  * FRONTEND V1 — SOURCE PACK
  *
@@ -800,7 +801,7 @@ export default function App() {
   }
 
   async function callAPI(action: string, payload: unknown) {
-    const response = await fetch('/api/gemini', {
+    const response = await fetchAI('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, payload }),

@@ -1,3 +1,4 @@
+import { fetchAI } from './team/api';
 /**
  * FRONTEND V2 — AI + GOOGLE SEARCH
  *
@@ -21,7 +22,7 @@
  * 7. Impact
  *
  * Catatan:
- * - AI berfungsi sebagai alat bantu riset dan persiapan.
+ * - AI berfungsi sebagai alat bantu riset dan persiapan.a
  * - Debat resmi tetap dilakukan oleh siswa PRO dan KONTRA.
  */
 
@@ -803,7 +804,7 @@ export default function App() {
   }
 
   async function callAPI(action: string, payload: unknown, withMeta = false) {
-    const response = await fetch('/api/gemini-ai', {
+    const response = await fetchAI('/api/gemini-ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, payload }),

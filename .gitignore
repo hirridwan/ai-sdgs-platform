@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+.dev.vars
+.dev.vars.*
+cookies*.txt
+
+.wrangler/
+*.bak
