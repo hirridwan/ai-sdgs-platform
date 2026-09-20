@@ -21,7 +21,7 @@
  * 7. Impact
  *
  * Catatan:
- * - AI berfungsi sebagai alat bantu riset dan persiapan.
+ * - AI berfungsi sebagai alat bantu riset dan persiapan.a
  * - Debat resmi tetap dilakukan oleh siswa PRO dan KONTRA.
  */
 
