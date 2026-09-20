@@ -3,17 +3,9 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
 import AppAI from './AppAI';
-import Home from './Home';
 
 const path = window.location.pathname.replace(/\/+$/, '') || '/';
-
-let RootApp = Home;
-
-if (path === '/source-pack') {
-  RootApp = App;
-} else if (path === '/ai') {
-  RootApp = AppAI;
-}
+const RootApp = path === '/ai' ? AppAI : App;
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
