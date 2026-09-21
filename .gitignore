@@ -29,3 +29,6 @@ cookies*.txt
 
 .wrangler/
 *.bak
+
+admin-local.seed.sql
+cookies*.txt

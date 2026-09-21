@@ -130,8 +130,12 @@ export default function TeamShell() {
         <a aria-current={path === '/source-pack' ? 'page' : undefined} href="/source-pack" onClick={event => follow(event, '/source-pack')}>Source Pack</a>
         <a aria-current={path === '/ai' ? 'page' : undefined} href="/ai" onClick={event => follow(event, '/ai')}>AI + Web</a>
       </div>
-      {status === 'in' ? <div className="team-account"><span>{team?.team_name}</span><button disabled={loggingOut} onClick={logout}>{loggingOut ? 'Keluar…' : 'Logout'}</button></div>
-        : <a href="/login" onClick={event => follow(event, '/login')}>Login tim</a>}
+            {status === 'in' ? <div className="team-account"><span>{team?.team_name}</span><button disabled={loggingOut} onClick={logout}>{loggingOut ? 'Keluar…' : 'Logout'}</button></div>
+        : <div className="team-auth-links">
+            <a href="/login" className="team-login-button" onClick={event => follow(event, '/login')}>Login tim</a>
+            {/* Sengaja bukan follow()/routes client-side: /admin dimuat main.tsx sebagai app React terpisah (AdminApp). */}
+            <a href="/admin" className="team-admin-link">Login admin</a>
+          </div>}
     </nav>
     <div className="team-ui team-alerts">
       {notice && <div className="team-notice" role="status">{notice}<button aria-label="Tutup pemberitahuan" onClick={() => setNotice('')}>×</button></div>}

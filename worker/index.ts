@@ -30,12 +30,22 @@ import {
   handleUpdateTeam,
 } from './teams';
 import { handleAiWithLogging, handleListInteractions } from './interactions';
+import { handleAdminAuth } from './admin-auth';
+import { handleAdminApi } from './admin-api';
 import type { Env } from './lib/db';
 
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname.startsWith('/api/admin/auth/')) {
+      return handleAdminAuth(request, env);
+    }
+
+    if (url.pathname.startsWith('/api/admin/')) {
+      return handleAdminApi(request, env);
+    }
 
     // Backend V1: /api/gemini
     if (url.pathname === '/api/gemini') {
