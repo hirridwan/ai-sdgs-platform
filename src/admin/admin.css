@@ -3,3 +3,517 @@
 @media(max-width:1100px){.adm-main{padding:28px 25px}.adm-top{padding:22px 25px}.adm-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.adm-overview-grid{grid-template-columns:1fr}.adm-editor-grid,.adm-conversation{grid-template-columns:1fr}.adm-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.adm-sidebar{position:static;width:100%;padding:18px 18px 10px}.adm-brand{font-size:15px!important}.adm-brand>span{width:34px;height:34px;border-radius:10px}.adm-nav-label,.adm-sidebar-foot{display:none}.adm-sidebar nav{display:flex;gap:4px;margin-top:16px}.adm-sidebar nav a{padding:9px 8px;font-size:11px;gap:5px;margin-bottom:0;flex:1;justify-content:center}.adm-sidebar nav a span{display:none}.adm-body{margin-left:0}.adm-top{padding:15px 18px;gap:8px;min-height:72px}.adm-account{gap:7px;flex-wrap:wrap;justify-content:flex-end;max-width:50%;font-size:10px}.adm-account button{padding:5px 9px;min-height:30px;font-size:10px}.adm-main{padding:20px 16px}.adm-heading{margin:15px 0 25px}.adm-heading h1{font-size:30px}.adm-metrics{gap:10px}.adm-card{padding:19px;border-radius:13px;margin-bottom:18px}.adm-metric{padding:16px}.adm-metric strong{font-size:32px}.adm-metric p{font-size:11px}.adm-section-head h2{font-size:17px}.adm-feature h2{font-size:27px}.adm-filter{flex-wrap:wrap}.adm-filter label{flex-basis:100%}.adm-filters{grid-template-columns:1fr}.adm-preview{grid-template-columns:1fr;padding:14px}.adm-pager{flex-wrap:wrap;justify-content:center}.adm-pager span{order:-1;width:100%;text-align:center}.adm-login{grid-template-columns:1fr}.adm-login-story{padding:35px 25px}.adm-login-story h1{font-size:37px;margin:18px 0}.adm-login-story>p:not(.adm-eyebrow){font-size:13px}.adm-login-line{margin-top:20px}.adm-login>form{width:calc(100% - 32px);padding:25px;margin:24px 0}.adm-conversation,.adm-editor-grid{gap:0}.adm-context h2{font-size:19px;overflow-wrap:anywhere}.adm-footer{font-size:9px}}
 .adm-argument{margin:14px 0 0;display:grid;gap:10px}.adm-argument dt{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#878da1;font-weight:600}.adm-argument dd{margin:4px 0 0}.adm-context-list{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:8px;font-size:13px}.adm-context-list li strong{font-weight:650}
+
+/* Pembaruan 1: toolbar, keterbacaan, dan timeline riwayat. */
+.adm-page-toolbar{display:flex;justify-content:space-between;align-items:center;gap:24px}
+.adm-page-toolbar .adm-heading{margin-bottom:22px}
+.adm-page-toolbar .adm-team-actions{flex-shrink:0}
+.adm small,.adm .adm-footnote,.adm .adm-filter-help{font-size:12px;color:#697188}
+.adm table{font-size:13px}.adm th{font-size:12px}
+.adm .adm-pre{font-size:15px;line-height:1.85}
+.adm .adm-preview p{font-size:14px;line-height:1.75}
+.adm .adm-tag{font-size:12px}.adm .adm-preview h3{font-size:12px}
+.adm-trail-motion{font-size:17px;font-weight:650;line-height:1.55;overflow-wrap:anywhere}
+.adm-interactions{border-left:2px solid #ded8f3;margin-left:7px;padding-left:23px}
+.adm-interactions>article{position:relative}
+.adm-interactions>article:before{content:'';position:absolute;width:12px;height:12px;border-radius:50%;background:#8271d7;border:3px solid #f5f6fa;top:29px;left:-31px;box-shadow:0 0 0 1px #c5bbed}
+.adm .adm-detail-link{font-size:14px;padding:7px 0}
+/* FORM TAMBAH TIM */
+.adm .adm-create-team {
+  border-top: 3px solid var(--purple);
+}
+
+.adm .adm-create-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 22px;
+  margin-top: 24px;
+}
+
+.adm .adm-create-grid > label {
+  margin: 0;
+}
+
+.adm .adm-create-grid > .adm-full,
+.adm .adm-create-grid > p,
+.adm .adm-create-grid > div {
+  grid-column: 1 / -1;
+}
+
+.adm .adm-create-grid > p {
+  margin: 0;
+}
+
+/* Tombol simpan berada di kanan bawah form. */
+.adm .adm-create-grid > button {
+  grid-column: 1 / -1;
+  justify-self: end;
+  min-width: 160px;
+  margin-top: 6px;
+}
+
+.adm .adm-create-grid input,
+.adm .adm-create-grid select,
+.adm .adm-create-grid textarea {
+  background: #fafafe;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.adm .adm-create-grid input:focus,
+.adm .adm-create-grid select:focus,
+.adm .adm-create-grid textarea:focus {
+  background: #fff;
+  border-color: var(--purple);
+}
+
+/* TIMELINE: KARTU RINGKAS */
+.adm .adm-interactions > article {
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.adm .adm-interactions > article:hover {
+  border-color: #c9c0ed;
+  box-shadow: 0 6px 20px rgba(53, 43, 99, 0.05);
+}
+
+.adm .adm-trail-preview {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.adm .adm-trail-preview > summary {
+  padding: 14px 0;
+  color: var(--purple);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.adm .adm-trail-preview > summary::marker {
+  color: #8c7bd6;
+}
+
+.adm .adm-trail-preview .adm-preview-open {
+  display: none;
+}
+
+.adm .adm-trail-preview[open] .adm-preview-open {
+  display: inline;
+}
+
+.adm .adm-trail-preview[open] .adm-preview-closed {
+  display: none;
+}
+
+.adm .adm-trail-preview .adm-preview {
+  margin-bottom: 8px;
+}
+
+.adm .adm-trail-preview + .adm-detail-link {
+  margin-top: 6px;
+}
+@media(max-width:700px){.adm-page-toolbar{display:block}.adm-page-toolbar .adm-team-actions{margin:0 0 20px}.adm-interactions{padding-left:15px;margin-left:4px}.adm-interactions>article:before{left:-23px}.adm .adm-pre{font-size:14px}.adm .adm-preview p{font-size:13px}
+.adm .adm-create-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .adm .adm-create-grid > button {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .adm .adm-trail-preview > summary {
+    min-height: 44px;
+    font-size: 13px;
+  }
+}
+
+/* Bank Mosi & SDG */
+.adm .adm-bank-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.adm .adm-bank-stats .adm-card {
+  padding: 20px;
+}
+
+.adm .adm-bank-stats span {
+  display: block;
+  color: #697188;
+  font-size: 13px;
+}
+
+.adm .adm-bank-stats strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 32px;
+  line-height: 1.3;
+}
+
+.adm .adm-bank-stats small {
+  font-size: 15px;
+  font-weight: 400;
+}
+
+/* Form di atas, tabel di bawah */
+.adm .adm-bank-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.6fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.adm .adm-bank-form {
+  position: sticky;
+  top: 24px;
+  border-top: 3px solid var(--purple);
+}
+
+.adm .adm-bank-form textarea {
+  min-height: 150px;
+  line-height: 1.75;
+}
+
+.adm .adm-bank-form input,
+.adm .adm-bank-form select,
+.adm .adm-bank-form textarea {
+  background: #fafafe;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.adm .adm-bank-form input:focus,
+.adm .adm-bank-form select:focus,
+.adm .adm-bank-form textarea:focus {
+  background: #fff;
+  border-color: var(--purple);
+}
+
+.adm .adm-bank-counter {
+  margin: 8px 0 16px;
+  text-align: right;
+  font-size: 12px;
+  color: #697188;
+}
+
+.adm .adm-bank-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.adm .adm-bank-form .adm-bank-form-actions button {
+  width: auto;
+  min-width: 150px;
+  min-height: 44px;
+  margin-top: 0;
+}
+
+/* Pencarian dan filter */
+.adm .adm-bank-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.adm .adm-bank-filters label {
+  margin-top: 0;
+}
+
+/* Daftar referensi SDG */
+.adm .adm-bank-sdgs > summary {
+  padding: 3px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--purple);
+  cursor: pointer;
+}
+
+.adm .adm-sdg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.adm .adm-sdg-grid button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+  padding: 15px;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.adm .adm-sdg-grid button strong {
+  color: var(--purple);
+  font-size: 13px;
+}
+
+.adm .adm-sdg-grid button span {
+  color: #4c5369;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.adm .adm-sdg-grid button small {
+  margin-top: auto;
+  padding-top: 8px;
+  color: #697188;
+  font-size: 12px;
+}
+
+.adm .adm-sdg-grid button:hover {
+  border-color: #b9ace8;
+  background: #f8f6ff;
+}
+
+.adm .adm-sdg-grid button[aria-pressed="true"] {
+  border-color: var(--purple);
+  background: #f0edfc;
+}
+
+/* Tabel mosi */
+/* Area tabel dapat digulir vertikal dan horizontal */
+.adm .adm-motion-table-wrap {
+  position: relative;
+  max-width: 100%;
+  max-height: 560px;
+  max-height: min(560px, 65dvh);
+  margin-top: 20px;
+
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.adm .adm-motion-table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.adm .adm-motion-table th {
+  padding: 15px 16px;
+  background: #f2f0fa;
+  color: #5d5679;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.4px;
+}
+
+.adm .adm-motion-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.adm .adm-motion-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+
+  background: #f2f0fa;
+  box-shadow: inset 0 -1px 0 var(--line);
+}
+
+.adm .adm-motion-table td {
+  padding: 18px 16px;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.adm .adm-motion-table tbody tr {
+  transition: background-color 160ms ease;
+}
+
+.adm .adm-motion-table tbody tr:hover {
+  background: #faf9fe;
+}
+
+.adm .adm-motion-table tbody tr.is-editing {
+  background: #f1edff;
+}
+
+.adm .adm-motion-table tbody tr.is-editing td:first-child {
+  box-shadow: inset 3px 0 0 var(--purple);
+}
+
+.adm .adm-motion-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.adm .adm-motion-number {
+  width: 60px;
+}
+
+.adm .adm-motion-sdg {
+  width: 220px;
+}
+
+.adm .adm-motion-action-col {
+  width: 160px;
+}
+
+.adm .adm-motion-table .adm-motion-text {
+  margin: 0 0 8px;
+  color: #30364b;
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.adm .adm-motion-table td > small {
+  display: block;
+  color: #697188;
+  font-size: 12px;
+}
+
+.adm .adm-motion-table .adm-tag {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Tombol edit dan hapus */
+.adm .adm-motion-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adm .adm-motion-table-actions button {
+  min-height: 40px;
+  padding: 8px 12px;
+  background: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.adm .adm-motion-table-actions button:not(.adm-danger) {
+  color: var(--purple);
+  border-color: #d8d0f0;
+}
+
+.adm .adm-motion-table-actions button:not(.adm-danger):hover {
+  background: #f0edfc;
+  border-color: var(--purple);
+}
+
+.adm .adm-motion-table-actions .adm-danger {
+  color: #a74352;
+  border-color: #edccd2;
+}
+
+.adm .adm-motion-table-actions .adm-danger:hover {
+  background: #fff0f2;
+  border-color: #d9909e;
+}
+
+/* Caption tabel untuk pembaca layar */
+.adm .adm-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 1100px) {
+  .adm .adm-bank-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .adm .adm-bank-form {
+    position: static;
+  }
+}
+
+@media (max-width: 700px) {
+   /* Empat menu sidebar tersusun dua kolom */
+  .adm .adm-sidebar nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .adm .adm-sidebar nav a {
+    min-width: 0;
+    min-height: 40px;
+    justify-content: flex-start;
+  }
+
+  .adm .adm-bank-stats {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .adm .adm-bank-stats .adm-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .adm .adm-bank-stats strong {
+    margin: 0;
+    font-size: 26px;
+    white-space: nowrap;
+  }
+
+  .adm .adm-bank-filters {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .adm .adm-bank-form .adm-bank-form-actions button {
+    width: 100%;
+  }
+
+  .adm .adm-sdg-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .adm .adm-sdg-grid button {
+    padding: 12px;
+  }
+
+  .adm .adm-motion-table th,
+  .adm .adm-motion-table td {
+    padding: 14px 12px;
+  }
+
+  .adm .adm-motion-table-actions button {
+    min-height: 44px;
+  }
+}

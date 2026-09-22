@@ -32,7 +32,7 @@ export type Team = { id: number; username: string; teamName: string; motion: str
 export type TeamList = { teams: (Team & { memberCount: number; interactionCount: number; lastInteractionAt: string | null })[]; pagination: Pagination };
 export type TeamDetail = { team: Team; members: { id: number; name: string; position: number }[]; activity: { totalInteractions: number; lastInteractionAt: string | null; byAction: Counts } };
 export type Overview = { overview: { totalTeams: number; totalMembers: number; totalInteractions: number; teamsWithInteractions: number; teamsWithoutInteractions: number; lastInteractionAt: string | null; byAction: Counts; recentInteractions: { id: number; teamId: number; teamName: string; action: string; position: string | null; createdAt: string }[] } };
-export type Preview = { id: number; teamId: number; teamName: string; sdgNumber: number | null; sdgTitle: string | null; action: string; position: string | null; backend: string | null; requestPreview: string; responsePreview: string; createdAt: string };
+export type Preview = { sdg: string; motion: string; id: number; teamId: number; teamName: string; sdgNumber: number | null; sdgTitle: string | null; action: string; position: string | null; backend: string | null; requestPreview: string; responsePreview: string; createdAt: string };
 export type Interactions = { interactions: Preview[]; pagination: Pagination };
 export type Interaction = { id: number; teamId: number; teamName: string; action: string; position: string | null; requestText: string; requestMeta: unknown; aiResponse: unknown; aiMeta: unknown; createdAt: string };
  
