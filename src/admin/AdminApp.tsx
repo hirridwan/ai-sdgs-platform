@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent, MouseEvent, ReactNode } from 'react';
 import { ACTIONS, AdminApiError, adminApi, backendName, date, message, object, text, useLoad } from './api';
-import type { Admin, Counts, Interaction, Interactions, Overview, Pagination, TeamDetail, TeamList } from './api';
+import type { Admin, Counts, Interaction, Interactions, Overview, Pagination, Preview, TeamDetail, TeamList } from './api';
 import './admin.css';
 
 type Navigate = (path: string) => void;
@@ -179,30 +179,111 @@ function TeamEditor({ initial, navigate }: { initial: TeamDetail; navigate: Navi
 }
 
 function InteractionsPage({ search, navigate }: { search: URLSearchParams; navigate: Navigate }) {
-  const [teamId, setTeamId] = useState(search.get('teamId') || ''), [action, setAction] = useState(search.get('action') || ''), [backend, setBackend] = useState(search.get('backend') || '');
+  const teamId = search.get('teamId') || '';
+  return teamId ? <TeamInteractionTrail teamId={teamId} search={search} navigate={navigate} /> : <TeamInteractionPicker search={search} navigate={navigate} />;
+}
+function TeamInteractionPicker({ search, navigate }: { search: URLSearchParams; navigate: Navigate }) {
+  const [q, setQ] = useState(search.get('q') || '');
+  const params = new URLSearchParams({ page: '1', limit: '50' }); if (search.get('q')) params.set('q', search.get('q')!);
+  const state = useLoad<TeamList>(`/api/admin/teams?${params}`);
+  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const next = new URLSearchParams(); if (q.trim()) next.set('q', q.trim()); navigate(`/admin/interactions${next.toString() ? `?${next}` : ''}`); }
+  return <><PageHeading eyebrow="JEJAK INTERAKSI" title="Pilih tim untuk ditelusuri." description="Klik salah satu tim untuk membaca urutan lengkap interaksi AI-nya, dari eksplorasi sampai evaluasi solusi." />
+    <form className="adm-filter adm-card" onSubmit={submit}><label>Cari tim<input placeholder="Nama tim atau username" value={q} onChange={event => setQ(event.target.value)} /></label><button className="adm-primary">Cari</button>{search.get('q') && <button type="button" onClick={() => { setQ(''); navigate('/admin/interactions'); }}>Reset</button>}</form>
+    <LoadState {...state} />{state.data && (state.data.teams.length ? <div className="adm-table-wrap"><table><thead><tr><th>Tim</th><th>Interaksi tersimpan</th><th>Terakhir aktif</th><th>Kelola</th></tr></thead><tbody>{state.data.teams.map(team => <tr key={team.id}><td><strong>{team.teamName}</strong><small>@{team.username} · ID {team.id}</small></td><td>{team.interactionCount}</td><td>{date(team.lastInteractionAt)}</td><td><Link to={`/admin/interactions?teamId=${team.id}&page=1&limit=10&order=asc`} navigate={navigate}>Lihat interaksi →</Link></td></tr>)}</tbody></table></div> : <p className="adm-empty">Tidak ada tim yang cocok.</p>)}
+  </>;
+}
+function TeamInteractionTrail({ teamId, search, navigate }: { teamId: string; search: URLSearchParams; navigate: Navigate }) {
+  const [action, setAction] = useState(search.get('action') || ''), [backend, setBackend] = useState(search.get('backend') || '');
   const [from, setFrom] = useState(search.get('dateFrom') || ''), [to, setTo] = useState(search.get('dateTo') || ''), [error, setError] = useState('');
+  const order = search.get('order') === 'desc' ? 'desc' : 'asc';
+  const team = useLoad<TeamDetail>(`/api/admin/teams/${teamId}`);
   const state = useLoad<Interactions>(`/api/admin/interactions?${search}`);
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(''); if (from && to && from > to) { setError('Tanggal awal tidak boleh melewati tanggal akhir.'); return; }
-    const params = new URLSearchParams({ page: '1', limit: '10' });
-    for (const [key, value] of [['teamId', teamId], ['action', action], ['backend', backend], ['dateFrom', from], ['dateTo', to]]) if (value) params.set(key, value);
+    const params = new URLSearchParams({ teamId, page: '1', limit: '10', order });
+    for (const [key, value] of [['action', action], ['backend', backend], ['dateFrom', from], ['dateTo', to]]) if (value) params.set(key, value);
     navigate(`/admin/interactions?${params}`);
   }
-  return <><PageHeading eyebrow="JEJAK INTERAKSI" title="Dari pertanyaan ke pemahaman." description="Telusuri input yang dikirim tim dan respons AI dalam konteks aktivitasnya." />
-    <form className="adm-card adm-filters" onSubmit={submit}><label>ID tim<input type="number" min={1} step={1} placeholder="Semua tim" value={teamId} onChange={event => setTeamId(event.target.value)} /></label><label>Aktivitas<select aria-label="Aktivitas" value={action} onChange={event => setAction(event.target.value)}><option value="">Semua aktivitas</option>{Object.entries(ACTIONS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Versi backend<select aria-label="Versi backend" value={backend} onChange={event => setBackend(event.target.value)}><option value="">Semua versi</option><option value="v1">V1 · Source Pack</option><option value="v2">V2 · AI + Web</option></select></label><label>Dari tanggal (UTC)<input type="date" value={from} onChange={event => setFrom(event.target.value)} /></label><label>Sampai tanggal (UTC)<input type="date" value={to} onChange={event => setTo(event.target.value)} /></label><div className="adm-row"><button className="adm-primary">Terapkan filter</button><button type="button" onClick={() => navigate('/admin/interactions')}>Reset</button></div><p className="adm-filter-help">Temukan ID di <Link to="/admin/teams" navigate={navigate}>daftar tim</Link>, atau buka riwayat langsung dari detail tim. Rentang tanggal menggunakan UTC.</p></form>
-    {error && <p className="adm-error" role="alert">{error}</p>}<LoadState {...state} />{state.data && <><p className="adm-result-count">{state.data.pagination.total} interaksi ditemukan</p><div className="adm-interactions">{state.data.interactions.map(item => <article className="adm-card" key={item.id}><div className="adm-section-head"><span className="adm-tag">{ACTIONS[item.action] || item.action}</span><small>{date(item.createdAt)} · #{item.id}</small></div><h2><Link to={`/admin/teams/${item.teamId}`} navigate={navigate}>{item.teamName}</Link></h2><p className="adm-muted">{backendName(item.backend)} · {item.position || 'Tanpa posisi'}</p><div className="adm-preview"><section><h3>Input tim</h3><p>{item.requestPreview || 'Tidak ada teks input baru; aktivitas menggunakan konteks pilihan isu.'}</p></section><section><h3>Cuplikan respons AI</h3><p>{item.action === 'factCheck' ? 'Hasil pemeriksaan klaim tersedia sebagai daftar. Buka detail untuk membaca hasil dan sumbernya.' : item.responsePreview}</p></section></div><Link className="adm-detail-link" to={`/admin/interactions/${item.id}`} navigate={navigate}>Baca interaksi lengkap →</Link></article>)}</div>{!state.data.interactions.length && <section className="adm-card adm-empty"><h2>Belum ada hasil pada halaman ini</h2><p>Ubah filter atau kembali ke halaman sebelumnya.</p></section>}<Pager pagination={state.data.pagination} navigate={navigate} path="/admin/interactions" search={search} /></>}</>;
+  function toggleOrder() { const next = new URLSearchParams(search); next.set('order', order === 'asc' ? 'desc' : 'asc'); next.set('page', '1'); navigate(`/admin/interactions?${next}`); }
+  return <><Link to="/admin/interactions" navigate={navigate}>← Semua tim</Link>
+    <PageHeading eyebrow="JEJAK INTERAKSI" title={team.data ? team.data.team.teamName : 'Memuat tim…'} description={team.data ? `@${team.data.team.username} · ${team.data.activity.totalInteractions} interaksi tersimpan · Terakhir: ${date(team.data.activity.lastInteractionAt)}` : ''} />
+    {team.data && <section className="adm-card"><h2>Ringkasan tahapan tim ini</h2><ActivityCounts counts={team.data.activity.byAction} /></section>}
+    <form className="adm-card adm-filters" onSubmit={submit}>
+      <label>Aktivitas<select aria-label="Aktivitas" value={action} onChange={event => setAction(event.target.value)}><option value="">Semua aktivitas</option>{Object.entries(ACTIONS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+      <label>Versi backend<select aria-label="Versi backend" value={backend} onChange={event => setBackend(event.target.value)}><option value="">Semua versi</option><option value="v1">V1 · Source Pack</option><option value="v2">V2 · AI + Web</option></select></label>
+      <label>Dari tanggal (UTC)<input type="date" value={from} onChange={event => setFrom(event.target.value)} /></label>
+      <label>Sampai tanggal (UTC)<input type="date" value={to} onChange={event => setTo(event.target.value)} /></label>
+      <div className="adm-row"><button className="adm-primary">Terapkan filter</button><button type="button" onClick={() => navigate(`/admin/interactions?teamId=${teamId}&page=1&limit=10&order=${order}`)}>Reset filter</button></div>
+      <p className="adm-filter-help">Urutan saat ini: <strong>{order === 'asc' ? 'Terlama → Terbaru (alur proses)' : 'Terbaru → Terlama'}</strong>. <button type="button" onClick={toggleOrder}>Balik urutan</button></p>
+    </form>
+    {error && <p className="adm-error" role="alert">{error}</p>}<LoadState {...state} />
+    {state.data && <><p className="adm-result-count">{state.data.pagination.total} interaksi ditemukan</p>
+      <div className="adm-interactions">{state.data.interactions.map((item, index) => <InteractionPreviewCard key={item.id} item={item} step={order === 'asc' ? (state.data!.pagination.page - 1) * state.data!.pagination.limit + index + 1 : state.data!.pagination.total - ((state.data!.pagination.page - 1) * state.data!.pagination.limit + index)} navigate={navigate} />)}</div>
+      {!state.data.interactions.length && <section className="adm-card adm-empty"><h2>Belum ada interaksi pada filter ini</h2><p>Ubah filter atau tampilkan semua aktivitas.</p></section>}
+      <Pager pagination={state.data.pagination} navigate={navigate} path="/admin/interactions" search={search} />
+    </>}
+  </>;
+}
+function InteractionPreviewCard({ item, step, navigate }: { item: Preview; step: number; navigate: Navigate }) {
+  return <article className="adm-card">
+    <div className="adm-section-head"><span className="adm-tag">Langkah {step} · {ACTIONS[item.action] || item.action}</span><small>{date(item.createdAt)} · #{item.id}</small></div>
+    <h2><Link to={`/admin/teams/${item.teamId}`} navigate={navigate}>{item.teamName}</Link></h2>
+    <p className="adm-muted">{backendName(item.backend)} · {item.position || 'Tanpa posisi'}{item.sdgNumber ? ` · SDG ${item.sdgNumber}` : ''}</p>
+    <div className="adm-preview"><section><h3>Input tim</h3><p>{item.requestPreview || 'Tidak ada teks input baru; aktivitas menggunakan konteks pilihan isu.'}</p></section><section><h3>Cuplikan respons AI</h3><p>{item.action === 'factCheck' ? 'Hasil pemeriksaan klaim tersedia sebagai daftar. Buka detail untuk membaca hasil dan sumbernya.' : item.responsePreview}</p></section></div>
+    <Link className="adm-detail-link" to={`/admin/interactions/${item.id}`} navigate={navigate}>Baca interaksi lengkap →</Link>
+  </article>;
 }
 
+const STAGE_INPUT_TITLE: Record<string, string> = {
+  explore: 'Konteks yang Dipilih Tim', factCheck: 'Klaim yang Diajukan untuk Diperiksa',
+  reviewArgument: 'Argumen yang Disusun Tim', debate: 'Argumen Awal & Respons Ronde Ini', evaluateSolution: 'Solusi yang Diajukan Tim',
+};
+const STAGE_OUTPUT_TITLE: Record<string, string> = {
+  explore: 'Catatan Eksplorasi (AI)', factCheck: 'Hasil Pemeriksaan Klaim (AI)',
+  reviewArgument: 'Ulasan AI atas Argumen', debate: 'Sanggahan / Pertanyaan AI', evaluateSolution: 'Evaluasi AI atas Solusi',
+};
 function InteractionPage({ id, navigate }: { id: string; navigate: Navigate }) {
   const state = useLoad<{ interaction: Interaction }>(`/api/admin/interactions/${id}`), item = state.data?.interaction;
   const meta = object(item?.requestMeta), payload = object(meta.payload), issue = object(payload.issue);
   return <><Link to="/admin/interactions" navigate={navigate}>← Semua interaksi</Link><LoadState {...state} />{item && <>
     <PageHeading eyebrow={`INTERAKSI #${item.id}`} title={ACTIONS[item.action] || item.action} description={`${item.teamName} · ${date(item.createdAt)} · ${backendName(text(meta.backend))}`} />
     <section className="adm-card adm-context"><p className="adm-eyebrow">KONTEKS SAAT INTERAKSI</p><h2>{text(issue.motion) || text(payload.motion) || 'Mosi tidak tercatat'}</h2><p>{text(issue.title) || 'Isu tidak tercatat'}</p><div className="adm-row"><span className="adm-tag">{text(issue.sdg) || text(payload.sdg) || 'SDG tidak tercatat'}</span><span className="adm-tag">{item.position || 'Posisi tidak tercatat'}</span><Link to={`/admin/teams/${item.teamId}`} navigate={navigate}>Profil tim saat ini →</Link></div><p className="adm-footnote">Konteks historis ini dapat berbeda dari identitas tim yang telah diperbarui.</p></section>
-    <div className="adm-conversation"><section className="adm-card adm-input"><h2>Input yang dikirim tim</h2><p className="adm-pre">{item.requestText || (item.action === 'explore' ? 'Eksplorasi menggunakan pilihan isu dan posisi, bukan pertanyaan bebas siswa.' : 'Tidak ada teks input baru.')}</p><p className="adm-footnote">Teks terkirim dapat memuat hasil AI atau sumber yang disalin; bukan bukti otomatis bahwa seluruhnya ditulis sendiri.</p>
-      {item.action === 'debate' && Object.keys(object(payload.arg)).length > 0 && <details><summary>Argumen awal dan ronde</summary><p>Ronde: {String(payload.round ?? 'Tidak tercatat')}</p>{['claim', 'reason', 'evidence'].map(key => <p className="adm-pre" key={key}>{key === 'claim' ? 'Klaim' : key === 'reason' ? 'Alasan' : 'Bukti'}: {text(object(payload.arg)[key]) || '—'}</p>)}</details>}
-    </section><section className="adm-card"><h2>Respons AI</h2><AiResponse value={item.aiResponse} /><Sources value={object(item.aiMeta).sources} /><Queries value={object(item.aiMeta).searchQueries} /></section></div>
+    <div className="adm-conversation">
+      <section className="adm-card adm-input">
+        <h2>{STAGE_INPUT_TITLE[item.action] || 'Input yang dikirim tim'}</h2>
+        <StudentInput item={item} payload={payload} />
+        <p className="adm-footnote">Teks terkirim dapat memuat hasil AI atau sumber yang disalin; bukan bukti otomatis bahwa seluruhnya ditulis sendiri.</p>
+      </section>
+      <section className="adm-card">
+        <h2>{STAGE_OUTPUT_TITLE[item.action] || 'Respons AI'}</h2>
+        <AiResponse value={item.aiResponse} />
+        <Sources value={object(item.aiMeta).sources} />
+        <Queries value={object(item.aiMeta).searchQueries} />
+      </section>
+    </div>
   </>}</>;
+}
+function StudentInput({ item, payload }: { item: Interaction; payload: Record<string, unknown> }) {
+  if (item.action === 'explore') {
+    const issue = object(payload.issue);
+    return <div className="adm-explore-context">
+      <p className="adm-muted">Tim memilih isu ini dan meminta AI menyusun catatan eksplorasi awal — tidak ada pertanyaan bebas yang diketik siswa pada tahap ini.</p>
+      <ul className="adm-context-list"><li><strong>Posisi:</strong> {item.position || 'Belum ditentukan'}</li><li><strong>Fokus PRO:</strong> {text(issue.proFocus) || '—'}</li><li><strong>Fokus KONTRA:</strong> {text(issue.contraFocus) || '—'}</li></ul>
+    </div>;
+  }
+  if (item.action === 'reviewArgument') {
+    const argument = object(payload.argument);
+    return <dl className="adm-argument"><dt>Klaim</dt><dd className="adm-pre">{text(argument.claim) || '—'}</dd><dt>Alasan</dt><dd className="adm-pre">{text(argument.reason) || '—'}</dd><dt>Bukti</dt><dd className="adm-pre">{text(argument.evidence) || '—'}</dd></dl>;
+  }
+  if (item.action === 'debate') {
+    const arg = object(payload.arg);
+    return <>
+      <dl className="adm-argument"><dt>Klaim awal</dt><dd className="adm-pre">{text(arg.claim) || '—'}</dd><dt>Alasan awal</dt><dd className="adm-pre">{text(arg.reason) || '—'}</dd><dt>Bukti awal</dt><dd className="adm-pre">{text(arg.evidence) || '—'}</dd></dl>
+      <p className="adm-muted">Ronde ke-{typeof payload.round === 'number' || typeof payload.round === 'string' ? String(payload.round) : '1'}</p>
+      <p className="adm-pre">{item.requestText || 'Tidak ada respons baru pada ronde ini.'}</p>
+    </>;
+  }
+  return <p className="adm-pre">{item.requestText || (item.action === 'evaluateSolution' ? 'Tidak ada solusi tertulis.' : 'Tidak ada teks input baru.')}</p>;
 }
 function AiResponse({ value }: { value: unknown }) {
   if (typeof value === 'string') return <p className="adm-pre">{value}</p>;

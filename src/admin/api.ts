@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-
+import { useEffect, useState } from 'react'; 
 export class AdminApiError extends Error {
   status: number;
   constructor(message: string, status: number) { super(message); this.status = status; }
@@ -33,10 +32,10 @@ export type Team = { id: number; username: string; teamName: string; motion: str
 export type TeamList = { teams: (Team & { memberCount: number; interactionCount: number; lastInteractionAt: string | null })[]; pagination: Pagination };
 export type TeamDetail = { team: Team; members: { id: number; name: string; position: number }[]; activity: { totalInteractions: number; lastInteractionAt: string | null; byAction: Counts } };
 export type Overview = { overview: { totalTeams: number; totalMembers: number; totalInteractions: number; teamsWithInteractions: number; teamsWithoutInteractions: number; lastInteractionAt: string | null; byAction: Counts; recentInteractions: { id: number; teamId: number; teamName: string; action: string; position: string | null; createdAt: string }[] } };
-export type Preview = { id: number; teamId: number; teamName: string; action: string; position: string | null; backend: string | null; requestPreview: string; responsePreview: string; createdAt: string };
+export type Preview = { id: number; teamId: number; teamName: string; sdgNumber: number | null; sdgTitle: string | null; action: string; position: string | null; backend: string | null; requestPreview: string; responsePreview: string; createdAt: string };
 export type Interactions = { interactions: Preview[]; pagination: Pagination };
 export type Interaction = { id: number; teamId: number; teamName: string; action: string; position: string | null; requestText: string; requestMeta: unknown; aiResponse: unknown; aiMeta: unknown; createdAt: string };
-
+ 
 export function useLoad<T>(url: string) {
   const [state, setState] = useState<{ url: string; data: T | null; error: string; loading: boolean }>({ url, data: null, error: '', loading: true });
   const [version, setVersion] = useState(0);
@@ -53,3 +52,4 @@ export function useLoad<T>(url: string) {
   const current = state.url === url ? state : { url, data: null, error: '', loading: true };
   return { ...current, reload: () => setVersion(value => value + 1) };
 }
+ 

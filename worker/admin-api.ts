@@ -193,7 +193,7 @@ function dateBoundary(value: string, name: string, nextDay = false): string {
   if (d.getUTCFullYear() > 9999) throw new InputError(`${name} di luar rentang.`);
   return d.toISOString().slice(0, 19).replace('T', ' ');
 }
-type PreviewRow = { id: number; team_id: number; team_name: string; action: string; position: string | null; backend: string | null; request_preview: string; response_preview: string; created_at: string };
+type PreviewRow = { id: number; team_id: number; team_name: string; sdg_number: number | null; sdg_title: string | null; action: string; position: string | null; backend: string | null; request_preview: string; response_preview: string; created_at: string };
 async function listInteractions(db: D1Database, search: URLSearchParams): Promise<Response> {
   const p = paging(search), conditions: string[] = [], params: unknown[] = [];
   if (search.has('teamId')) { conditions.push('i.team_id = ?'); params.push(positive(search.get('teamId')!, 'teamId')); }
@@ -205,14 +205,17 @@ async function listInteractions(db: D1Database, search: URLSearchParams): Promis
   if (from !== null) { conditions.push('i.created_at >= ?'); params.push(dateBoundary(from, 'dateFrom')); }
   if (to !== null) { conditions.push('i.created_at < ?'); params.push(dateBoundary(to, 'dateTo', true)); }
   if (from !== null && to !== null && from > to) throw new InputError('dateFrom tidak boleh melewati dateTo.');
+  const order = search.get('order');
+  if (order !== null && !['asc', 'desc'].includes(order)) throw new InputError('order harus asc atau desc.');
+  const direction = order === 'asc' ? 'ASC' : 'DESC'; // Sudah divalidasi whitelist di atas, aman diinterpolasi ke SQL.
   const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
   const count = await queryOne<{ total: number }>(db, `SELECT COUNT(*) AS total FROM ai_interactions i ${where}`, params);
-  const rows = await queryAll<PreviewRow>(db, `SELECT i.id, i.team_id, t.team_name, i.action, i.position,
+  const rows = await queryAll<PreviewRow>(db, `SELECT i.id, i.team_id, t.team_name, t.sdg_number, t.sdg_title, i.action, i.position,
     ${BACKEND} AS backend, substr(i.request_text, 1, 240) AS request_preview,
     substr(i.ai_response, 1, 240) AS response_preview, i.created_at
     FROM ai_interactions i JOIN teams t ON t.id = i.team_id ${where}
-    ORDER BY i.created_at DESC, i.id DESC LIMIT ? OFFSET ?`, [...params, p.limit, p.offset]);
-  return json({ interactions: rows.map(row => ({ id: row.id, teamId: row.team_id, teamName: row.team_name, action: row.action, position: row.position, backend: row.backend,
+    ORDER BY i.created_at ${direction}, i.id ${direction} LIMIT ? OFFSET ?`, [...params, p.limit, p.offset]);
+  return json({ interactions: rows.map(row => ({ id: row.id, teamId: row.team_id, teamName: row.team_name, sdgNumber: row.sdg_number, sdgTitle: row.sdg_title, action: row.action, position: row.position, backend: row.backend,
     requestPreview: row.request_preview, responsePreview: row.response_preview, createdAt: utc(row.created_at) })), pagination: pagination(p, count?.total ?? 0) });
 }
 async function interactionDetail(db: D1Database, id: number): Promise<Response> {
