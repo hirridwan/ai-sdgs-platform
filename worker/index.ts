@@ -20,16 +20,32 @@
 
 import { onRequestPost as handleGemini } from './gemini';
 import { onRequestPost as handleGeminiAi } from './gemini-ai';
+import { handleLogin, handleLogout, handleMe } from './auth';
+import {
+  handleAddMember,
+  handleDeleteMember,
+  handleGetTeam,
+  handleListSdgs,
+  handleUpdateMember,
+  handleUpdateTeam,
+} from './teams';
+import { handleAiWithLogging, handleListInteractions } from './interactions';
+import { handleAdminAuth } from './admin-auth';
+import { handleAdminApi } from './admin-api';
+import type { Env } from './lib/db';
 
-type WorkerEnv = {
-  ASSETS: any;
-  GEMINI_API_KEY?: string;
-  GEMINI_MODEL?: string;
-};
 
 export default {
-  async fetch(request: Request, env: WorkerEnv): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname.startsWith('/api/admin/auth/')) {
+      return handleAdminAuth(request, env);
+    }
+
+    if (url.pathname.startsWith('/api/admin/')) {
+      return handleAdminApi(request, env);
+    }
 
     // Backend V1: /api/gemini
     if (url.pathname === '/api/gemini') {
@@ -44,7 +60,7 @@ export default {
       }
 
       // Adapt the existing Pages Function context to the Worker handler.
-      return handleGemini({ request, env });
+      return handleAiWithLogging(request, env, handleGemini, 'v1');
     }
 
     // Backend V2: /api/gemini-ai
@@ -60,7 +76,90 @@ export default {
       }
 
       // Adapt the existing Pages Function context to the Worker handler.
-      return handleGeminiAi({ request, env });
+      return handleAiWithLogging(request, env, handleGeminiAi, 'v2');
+    }
+
+    // Auth: /api/auth/login
+    if (url.pathname === '/api/auth/login') {
+      if (request.method !== 'POST') {
+        return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+          status: 405,
+          headers: { 'Content-Type': 'application/json; charset=utf-8', Allow: 'POST' },
+        });
+      }
+      return handleLogin(request, env);
+    }
+
+    // Auth: /api/auth/logout
+    if (url.pathname === '/api/auth/logout') {
+      if (request.method !== 'POST') {
+        return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+          status: 405,
+          headers: { 'Content-Type': 'application/json; charset=utf-8', Allow: 'POST' },
+        });
+      }
+      return handleLogout(request, env);
+    }
+
+    // Auth: /api/auth/me
+    if (url.pathname === '/api/auth/me') {
+      if (request.method !== 'GET') {
+        return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+          status: 405,
+          headers: { 'Content-Type': 'application/json; charset=utf-8', Allow: 'GET' },
+        });
+      }
+      return handleMe(request, env);
+    }
+
+    // Team: /api/sdgs (publik, tidak perlu login)
+    if (url.pathname === '/api/sdgs') {
+      if (request.method !== 'GET') {
+        return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+          status: 405,
+          headers: { 'Content-Type': 'application/json; charset=utf-8', Allow: 'GET' },
+        });
+      }
+      return handleListSdgs();
+    }
+
+    // Team: /api/team
+    if (url.pathname === '/api/team') {
+      if (request.method === 'GET') return handleGetTeam(request, env);
+      if (request.method === 'PATCH') return handleUpdateTeam(request, env);
+      return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json; charset=utf-8', Allow: 'GET, PATCH' },
+      });
+    }
+
+    // Team: /api/team/members
+    if (url.pathname === '/api/team/members') {
+      if (request.method === 'POST') return handleAddMember(request, env);
+      if (request.method === 'PATCH') return handleUpdateMember(request, env);
+      if (request.method === 'DELETE') return handleDeleteMember(request, env);
+      return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json; charset=utf-8', Allow: 'POST, PATCH, DELETE' },
+      });
+    }
+
+    // Riwayat AI milik tim yang sedang login.
+    if (url.pathname === '/api/interactions') {
+      if (request.method !== 'GET') {
+        return new Response(
+          JSON.stringify({ error: 'Method Not Allowed' }),
+          {
+            status: 405,
+            headers: {
+              'Content-Type': 'application/json; charset=utf-8',
+              Allow: 'GET',
+            },
+          },
+        );
+      }
+
+      return handleListInteractions(request, env);
     }
 
     // Frontend: React/Vite static assets and SPA routes.

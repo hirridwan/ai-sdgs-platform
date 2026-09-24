@@ -1,22 +1,16 @@
-import { StrictMode } from 'react';
+import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
-import App from './App';
-import AppAI from './AppAI';
-import Home from './Home';
 
+const AdminApp = lazy(() => import('./admin/AdminApp'));
+const TeamShell = lazy(() => import('./team/TeamShell'));
 const path = window.location.pathname.replace(/\/+$/, '') || '/';
-
-let RootApp = Home;
-
-if (path === '/source-pack') {
-  RootApp = App;
-} else if (path === '/ai') {
-  RootApp = AppAI;
-}
+const isAdmin = path === '/admin' || path.startsWith('/admin/');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RootApp />
+    <Suspense fallback={<p style={{ padding: 24 }} role="status">Memuat aplikasi…</p>}>
+      {isAdmin ? <AdminApp /> : <TeamShell />}
+    </Suspense>
   </StrictMode>,
 );
