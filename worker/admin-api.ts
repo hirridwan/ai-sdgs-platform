@@ -312,6 +312,33 @@ async function deleteMotion(db: D1Database, id: number): Promise<Response> {
   return listMotionsAdmin(db);
 }
 
+async function deleteInteraction(
+  db: D1Database,
+  id: number,
+): Promise<Response> {
+  const result = await execute(
+    db,
+    'DELETE FROM ai_interactions WHERE id = ?',
+    [id],
+  );
+
+  if (!result.success) {
+    throw new Error('Gagal menghapus interaksi.');
+  }
+
+  if (!result.meta.changes) {
+    throw new InputError(
+      'Interaksi tidak ditemukan atau sudah dihapus.',
+      404,
+    );
+  }
+
+  return json({
+    ok: true,
+    deletedId: id,
+  });
+}
+
 /** Register AFTER /api/admin/auth/ and BEFORE the frontend fallback. */
 export async function handleAdminApi(request: Request, env: Env): Promise<Response> {
   try {
@@ -332,7 +359,16 @@ export async function handleAdminApi(request: Request, env: Env): Promise<Respon
       if (teamMatch) { const id = positive(teamMatch[1], 'teamId'); allowed = ['GET', 'PATCH']; work = () => request.method === 'GET' ? teamDetail(env.DB, id) : updateTeam(request, env.DB, id); }
       else if (memberList) { const id = positive(memberList[1], 'teamId'); allowed = ['POST']; work = () => mutateMember(request, env.DB, id); }
       else if (member) { const teamId = positive(member[1], 'teamId'), memberId = positive(member[2], 'memberId'); allowed = ['PATCH', 'DELETE']; work = () => mutateMember(request, env.DB, teamId, memberId); }
-      else if (interaction) { const id = positive(interaction[1], 'interactionId'); allowed = ['GET']; work = () => interactionDetail(env.DB, id); }
+      else if (interaction) {
+        const id = positive(interaction[1], 'interactionId');
+
+        allowed = ['GET', 'DELETE'];
+
+        work = () =>
+          request.method === 'DELETE'
+            ? deleteInteraction(env.DB, id)
+            : interactionDetail(env.DB, id);
+      }
       else if (motion) { const id = positive(motion[1], 'motionId'); allowed = ['PATCH', 'DELETE'];
       work = () =>
         request.method === 'PATCH'

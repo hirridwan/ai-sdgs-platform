@@ -23,7 +23,7 @@
 .team-toplinks a { font-size: 13px; padding: 7px 9px; border-radius: 8px; }
 .team-toplinks a[aria-current] { background: #f0edff; font-weight: 700; }
 .team-brand { font-weight: 800; letter-spacing: -.025em; font-size: 19px; }
-.team-account span { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-account span, .team-account a { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .team-auth-links { display: flex; align-items: center; gap: 14px; }
 .team-auth-links a.team-login-button { display: inline-flex; align-items: center; padding: 9px 18px; border-radius: 10px; background: linear-gradient(135deg, #6c5ce7 0%, #2563eb 100%); color: #fff; font-weight: 700; font-size: 14px; text-decoration: none; transition: opacity .15s ease; }
 .team-auth-links a.team-login-button:hover { opacity: .9; text-decoration: none; }

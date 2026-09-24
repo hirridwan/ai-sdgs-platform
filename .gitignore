@@ -32,3 +32,7 @@ cookies*.txt
 
 admin-local.seed.sql
 cookies*.txt
+test-results/
+/jalankan-ngrok.cmd
+/tests/
+/jalankan-tes-tim.cmd

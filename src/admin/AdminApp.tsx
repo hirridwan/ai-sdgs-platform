@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, MouseEvent, ReactNode } from 'react';
 import { ACTIONS, AdminApiError, adminApi, backendName, date, message, object, text, useLoad } from './api';
 import type { Admin, Counts, Interaction, Interactions, Overview, Pagination, Preview, TeamDetail, TeamList } from './api';
@@ -247,6 +247,51 @@ function TeamInteractionTrail({ teamId, search, navigate }: { teamId: string; se
   const team = useLoad<TeamDetail>(`/api/admin/teams/${teamId}`);
   const effectiveSearch = new URLSearchParams(search); effectiveSearch.set('order', order);
   const state = useLoad<Interactions>(`/api/admin/interactions?${effectiveSearch}`);
+
+  const [deleteNotice, setDeleteNotice] = useState('');
+
+  // Tampilkan hasil penghapusan.
+  useEffect(() => {
+    const changed = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{
+          id: number;
+          alreadyGone: boolean;
+        }>
+      ).detail;
+
+      setDeleteNotice(
+        detail.alreadyGone
+          ? `Interaksi #${detail.id} sudah tidak tersedia. Daftar diperbarui.`
+          : `Interaksi #${detail.id} berhasil dihapus.`,
+      );
+    };
+
+    window.addEventListener('admin-interactions-changed', changed);
+
+    return () => {
+      window.removeEventListener('admin-interactions-changed', changed);
+    };
+  }, []);
+
+  // Jika halaman terakhir habis, pindah ke halaman yang masih tersedia.
+  // Parameter filter lainnya tetap dipertahankan.
+  useEffect(() => {
+    if (!state.data || state.loading) return;
+
+    const lastPage = Math.max(
+      1,
+      state.data.pagination.totalPages,
+    );
+
+    if (state.data.pagination.page > lastPage) {
+      const next = new URLSearchParams(search);
+      next.set('page', String(lastPage));
+
+      navigate(`/admin/interactions?${next}`);
+    }
+  }, [state.data, state.loading, search, navigate]);
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(''); if (from && to && from > to) { setError('Tanggal awal tidak boleh melewati tanggal akhir.'); return; }
     const params = new URLSearchParams({ teamId, page: '1', limit: '10', order });
@@ -266,8 +311,20 @@ function TeamInteractionTrail({ teamId, search, navigate }: { teamId: string; se
       <div className="adm-row"><button className="adm-primary">Terapkan filter</button><button type="button" onClick={() => navigate(`/admin/interactions?teamId=${teamId}&page=1&limit=10&order=${order}`)}>Reset filter</button></div>
       <p className="adm-filter-help">Urutan saat ini: <strong>{order === 'asc' ? 'Terlama → Terbaru (alur proses)' : 'Terbaru → Terlama'}</strong>. <button type="button" onClick={toggleOrder}>Balik urutan</button></p>
     </form>
-    {error && <p className="adm-error" role="alert">{error}</p>}<LoadState {...state} />
-    {state.data && <><p className="adm-result-count">{state.data.pagination.total} interaksi ditemukan</p>
+    {error && <p className="adm-error" role="alert">{error}</p>}
+    <LoadState {...state} />
+
+      {/* Notifikasi setelah menghapus interaksi */}
+      {deleteNotice && (
+        <p className="adm-card" role="status">
+          {deleteNotice}
+        </p>
+      )}
+
+      {state.data && <>
+        <p className="adm-result-count">
+          {state.data.pagination.total} interaksi ditemukan
+        </p>
       <div className="adm-interactions">{state.data.interactions.map((item, index) => <InteractionPreviewCard key={item.id} item={item} step={(state.data!.pagination.page - 1) * state.data!.pagination.limit + index + 1} returnTo={`/admin/interactions?${effectiveSearch}`} navigate={navigate} />)}</div>
       {!state.data.interactions.length && <section className="adm-card adm-empty"><h2>Belum ada interaksi pada filter ini</h2><p>Ubah filter atau tampilkan semua aktivitas.</p></section>}
       <Pager pagination={state.data.pagination} navigate={navigate} path="/admin/interactions" search={search} />
@@ -309,7 +366,89 @@ function InteractionPreviewCard({ item, step, returnTo, navigate }: { item: Prev
   </div>
 </details>
     <Link className="adm-detail-link" to={`/admin/interactions/${item.id}?${new URLSearchParams({ returnTo })}`} navigate={navigate}>Baca interaksi lengkap →</Link>
+    <DeleteInteractionButton item={item} />
   </article>;
+}
+
+function DeleteInteractionButton({ item }: { item: Preview }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const pending = useRef(false);
+
+  async function remove() {
+    if (pending.current) return;
+
+    const confirmed = window.confirm(
+      `Hapus permanen interaksi #${item.id}?\n` +
+      `Tim: ${item.teamName}\n` +
+      `Aktivitas: ${ACTIONS[item.action] || item.action}\n` +
+      `Waktu: ${date(item.createdAt)}\n\n` +
+      'Input siswa dan jawaban AI pada interaksi ini akan dihapus ' +
+      'dari riwayat tim dan admin. Tindakan ini tidak dapat dibatalkan.',
+    );
+
+    if (!confirmed) return;
+
+    pending.current = true;
+    setBusy(true);
+    setError('');
+
+    try {
+      await adminApi<{ ok: true; deletedId: number }>(
+        `/api/admin/interactions/${item.id}`,
+        { method: 'DELETE' },
+      );
+
+      window.dispatchEvent(
+        new CustomEvent('admin-interactions-changed', {
+          detail: {
+            id: item.id,
+            alreadyGone: false,
+          },
+        }),
+      );
+    } catch (failure) {
+      if (
+        failure instanceof AdminApiError &&
+        failure.status === 404
+      ) {
+        // Catatan mungkin sudah dihapus admin lain.
+        window.dispatchEvent(
+          new CustomEvent('admin-interactions-changed', {
+            detail: {
+              id: item.id,
+              alreadyGone: true,
+            },
+          }),
+        );
+      } else {
+        setError(message(failure));
+      }
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="adm-team-actions">
+      <button
+        type="button"
+        className="adm-danger"
+        disabled={busy}
+        onClick={remove}
+        aria-label={`Hapus interaksi #${item.id}`}
+      >
+        {busy ? 'Menghapus…' : 'Hapus interaksi'}
+      </button>
+
+      {error && (
+        <p className="adm-error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }
 
 const STAGE_INPUT_TITLE: Record<string, string> = {

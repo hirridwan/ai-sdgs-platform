@@ -39,6 +39,24 @@ export type Interaction = { id: number; teamId: number; teamName: string; action
 export function useLoad<T>(url: string) {
   const [state, setState] = useState<{ url: string; data: T | null; error: string; loading: boolean }>({ url, data: null, error: '', loading: true });
   const [version, setVersion] = useState(0);
+  // Perbarui daftar dan statistik ketika interaksi dihapus.
+  useEffect(() => {
+    const relatedEndpoint =
+      /^\/api\/admin\/(interactions|teams|overview)(?:[/?]|$)/.test(url);
+
+    if (!relatedEndpoint) return;
+
+    const refresh = () => {
+      setVersion(value => value + 1);
+    };
+
+    window.addEventListener('admin-interactions-changed', refresh);
+
+    return () => {
+      window.removeEventListener('admin-interactions-changed', refresh);
+    };
+  }, [url]);
+
   useEffect(() => {
     const controller = new AbortController();
     setState({ url, data: null, error: '', loading: true });
