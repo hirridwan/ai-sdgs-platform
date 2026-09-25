@@ -1,3 +1,4 @@
+import { ensureRun, validRunId } from './debate-runs';
 import { execute, json, queryAll, queryOne } from './lib/db';
 import type { Env } from './lib/db';
 import { requireSession } from './lib/session';
@@ -174,6 +175,16 @@ export async function handleAiWithLogging(
     return json({ error: 'Body request bukan JSON yang valid.' }, 400);
   }
 
+  if (
+    body.debateSessionId !== undefined &&
+    !validRunId(body.debateSessionId)
+  ) {
+    return json(
+      { error: 'ID sesi debat tidak valid.' },
+      400,
+    );
+  }
+
   const action = asText(body.action);
 
   if (!ALLOWED_ACTIONS.has(action)) {
@@ -224,6 +235,7 @@ export async function handleAiWithLogging(
 
     const requestMeta = {
       schemaVersion: 1,
+      debateSessionId: body.debateSessionId ?? null,
       backend,
       action,
       receivedAt,
@@ -263,6 +275,16 @@ export async function handleAiWithLogging(
           })
         : [],
     };
+
+    if (validRunId(body.debateSessionId)) {
+      await ensureRun(
+        env.DB,
+        teamId,
+        body.debateSessionId,
+        backend,
+        payload,
+      );
+    }
 
     const saved = await execute(
       env.DB,

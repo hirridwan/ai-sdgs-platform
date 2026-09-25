@@ -1,3 +1,4 @@
+import SessionHistory from '../history/SessionHistory';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, MouseEvent, ReactNode } from 'react';
 import { ACTIONS, AdminApiError, adminApi, backendName, date, message, object, text, useLoad } from './api';
@@ -240,7 +241,56 @@ function TeamInteractionPicker({ search, navigate }: { search: URLSearchParams; 
     {state.data && <Pager pagination={state.data.pagination} navigate={navigate} path="/admin/interactions" search={search} />}
   </>;
 }
-function TeamInteractionTrail({ teamId, search, navigate }: { teamId: string; search: URLSearchParams; navigate: Navigate }) {
+
+function TeamInteractionTrail(props: {
+  teamId: string;
+  search: URLSearchParams;
+  navigate: Navigate;
+}) {
+  const team = useLoad<TeamDetail>(
+    `/api/admin/teams/${props.teamId}`,
+  );
+
+  return (
+    <>
+      <Link
+        to="/admin/interactions"
+        navigate={props.navigate}
+      >
+        ← Semua tim
+      </Link>
+
+      <PageHeading
+        eyebrow="RIWAYAT TIM"
+        title={
+          team.data?.team.teamName || 'Memuat tim…'
+        }
+        description={
+          team.data
+            ? `@${team.data.team.username}`
+            : ''
+        }
+      />
+
+      <LoadState {...team} />
+
+      <SessionHistory
+        key={props.teamId}
+        teamId={props.teamId}
+      />
+
+      <details className="history-legacy">
+        <summary>
+          Riwayat per interaksi (filter dan data lama)
+        </summary>
+
+        <LegacyTeamInteractionTrail {...props} />
+      </details>
+    </>
+  );
+}
+
+function LegacyTeamInteractionTrail({ teamId, search, navigate }: { teamId: string; search: URLSearchParams; navigate: Navigate }) {
   const [action, setAction] = useState(search.get('action') || ''), [backend, setBackend] = useState(search.get('backend') || '');
   const [from, setFrom] = useState(search.get('dateFrom') || ''), [to, setTo] = useState(search.get('dateTo') || ''), [error, setError] = useState('');
   const order = search.get('order') === 'desc' ? 'desc' : 'asc';

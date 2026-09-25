@@ -1,3 +1,4 @@
+import { useDebateRun } from './history/useDebateRun';
 import { fetchAI } from './team/api';
 /**
  * FRONTEND V1 — SOURCE PACK
@@ -679,6 +680,21 @@ export default function App() {
   const [evalReply, setEvalReply] = useState('');
   const [evalLoading, setEvalLoading] = useState(false);
 
+  const debateRun = useDebateRun(
+    selectedIssue,
+    debatePosition,
+    'v1',
+    currentStage === 7 &&
+    solution.trim() &&
+    evalReply.trim()
+      ? {
+          ...argument,
+          solution,
+          evaluation: evalReply,
+        }
+      : null,
+  );
+
   const verifiedClaims = useMemo(
     () => claims.filter((claim) => ['verified', 'mostly_true'].includes(claim.verdict)),
     [claims],
@@ -804,7 +820,7 @@ export default function App() {
     const response = await fetchAI('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, payload }),
+      body: JSON.stringify({ action, payload, debateSessionId: debateRun.id, }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -1247,6 +1263,18 @@ export default function App() {
         <p className="text-slate text-base leading-relaxed max-w-[65ch] mb-7">Ringkasan akhir perjalananmu dari isu, klaim, argumen, uji argumen, sampai solusi.</p>
 
         <div className="space-y-4">
+          <div role="status">
+            {debateRun.status}
+
+            {debateRun.status.startsWith('Gagal') && (
+              <button
+                type="button"
+                onClick={debateRun.retry}
+              >
+                {' '}· Coba simpan lagi
+              </button>
+            )}
+          </div>
           <SummaryCard label="Isu" value={`${selectedIssue?.title || '-'}${debatePosition ? ` — Posisi ${debatePosition}` : ''}`} />
           <SummaryCard label="Klaim" value={argument.claim || '-'} />
           <SummaryCard label="Alasan" value={argument.reason || '-'} />
@@ -1261,6 +1289,20 @@ export default function App() {
 
         <div className="flex gap-3 flex-wrap mt-7">
           <Btn secondary onClick={() => goTo(6)}>← Kembali</Btn>
+          <Btn
+            secondary
+            onClick={() => {
+              const confirmed = window.confirm(
+                'Mulai sesi baru? Pastikan Impact sudah tersimpan.',
+              );
+
+              if (confirmed) {
+                window.location.reload();
+              }
+            }}
+          >
+            Mulai sesi baru
+          </Btn>
         </div>
       </div>
     );

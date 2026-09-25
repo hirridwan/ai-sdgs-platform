@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { api, object, text } from './api';
 import type { HistoryData, Interaction, TeamData } from './api';
+import SessionHistory from '../history/SessionHistory';
  
 const actions: Record<string, string> = {
   explore: 'Eksplorasi isu', factCheck: 'Pemeriksaan fakta', reviewArgument: 'Ulasan argumen',
@@ -49,7 +50,7 @@ export default function Dashboard({ onTeamChange, onOpen }: {
           <section className="team-card"><p className="team-eyebrow">ANGGOTA</p><h2>{data.members.length} orang</h2><p className="team-muted">Satu akun, kontribusi bersama.</p></section>
         </div>
         <div className="team-tabs" aria-label="Bagian dashboard">
-          <button aria-pressed={tab === 'history'} onClick={() => setTab('history')}>Riwayat AI</button>
+          <button aria-pressed={tab === 'history' } onClick={() => setTab('history')}>Riwayat AI</button>
           <button aria-pressed={tab === 'identity'} onClick={() => setTab('identity')}>Identitas tim</button>
         </div>
         {tab === 'history' ? <History /> : <Identity data={data} sdgs={sdgs} motions={motions} onChange={changed} />}
@@ -134,8 +135,24 @@ function Identity({ data, sdgs, motions, onChange }: {
     </div>
   </>;
 }
- 
+
 function History() {
+  return (
+    <>
+      <SessionHistory />
+
+      <details className="history-legacy">
+        <summary>
+          Riwayat per interaksi (termasuk data lama)
+        </summary>
+
+        <LegacyHistory />
+      </details>
+    </>
+  );
+}
+
+function LegacyHistory() {
   const [action, setAction] = useState('');
   const [page, setPage] = useState(1);
   const [refresh, setRefresh] = useState(0);

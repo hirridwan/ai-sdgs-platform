@@ -3,6 +3,7 @@ import type { Env } from './lib/db';
 import { requireAdminSession } from './lib/admin-session';
 import { findSdgTitle } from './lib/sdgs';
 import { hashPassword } from './lib/password';
+import { listRuns } from './debate-runs';
 
 const ACTIONS = ['explore', 'factCheck', 'reviewArgument', 'debate', 'evaluateSolution'];
 // CASE protects legacy rows whose metadata is absent or malformed JSON.
@@ -348,6 +349,18 @@ export async function handleAdminApi(request: Request, env: Env): Promise<Respon
     let allowed: string[] = [], work: (() => Promise<Response>) | null = null;
     if (path === '/api/admin/overview') { allowed = ['GET']; work = () => overview(env.DB); }
     else if (path === '/api/admin/teams') { allowed = ['GET', 'POST']; work = () => request.method === 'GET' ? listTeams(env.DB, url.searchParams) : createTeam(request, env.DB); }
+    else if (path === '/api/admin/debate-sessions') {
+      allowed = ['GET'];
+
+      work = () => listRuns(
+        env.DB,
+        positive(
+          url.searchParams.get('teamId') || '',
+          'teamId',
+        ),
+        url.searchParams,
+      );
+    }
     else if (path === '/api/admin/interactions') { allowed = ['GET']; work = () => listInteractions(env.DB, url.searchParams); }
     else if (path === '/api/admin/motions') { allowed = ['GET', 'POST']; work = () => request.method === 'GET' ? listMotionsAdmin(env.DB) : createMotion(request, env.DB); }
     else {

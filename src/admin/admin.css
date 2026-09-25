@@ -447,6 +447,37 @@
   border: 0;
 }
 
+/* Area scroll untuk teks panjang di dashboard admin. */
+.adm .adm-pre,
+.adm .adm-preview p,
+.adm details pre,
+.adm .adm-argument dd,
+.adm .adm-motion-text {
+  max-height: 360px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* Izinkan isi kolom menyusut sesuai lebar layar. */
+.adm .adm-preview > section,
+.adm .adm-conversation > section {
+  min-width: 0;
+}
+
+.adm .adm-cell-copy {
+  max-height: none;
+}
+
+/* Mosi pada tabel daftar tim. */
+.adm .adm-cell-scroll {
+  max-height: 180px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 1100px) {
   .adm .adm-bank-layout {
     grid-template-columns: minmax(0, 1fr);

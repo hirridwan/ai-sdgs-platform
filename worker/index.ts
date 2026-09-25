@@ -39,6 +39,7 @@ import { handleAiWithLogging, handleListInteractions } from './interactions';
 import { handleAdminAuth } from './admin-auth';
 import { handleAdminApi } from './admin-api';
 import { handleListMotions } from './motions';
+import { handleRuns } from './debate-runs';
 import type { Env } from './lib/db';
 
 
@@ -52,6 +53,10 @@ export default {
 
     if (url.pathname.startsWith('/api/admin/')) {
       return handleAdminApi(request, env);
+    }
+
+    if (url.pathname === '/api/debate-sessions') {
+      return handleRuns(request, env);
     }
 
     // Backend V1: /api/gemini
