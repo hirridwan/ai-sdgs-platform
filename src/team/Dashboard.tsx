@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { api, object, text } from './api';
 import type { HistoryData, Interaction, TeamData } from './api';
-
+import SessionHistory from '../history/SessionHistory';
+ 
 const actions: Record<string, string> = {
   explore: 'Eksplorasi isu', factCheck: 'Pemeriksaan fakta', reviewArgument: 'Ulasan argumen',
   debate: 'Latihan sanggahan', evaluateSolution: 'Evaluasi solusi',
@@ -12,13 +13,16 @@ function time(value: string) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
-
+ 
+type Motion = { id: number; text: string; sdgNumber: number | null };
+ 
 export default function Dashboard({ onTeamChange, onOpen }: {
   onTeamChange: (team: TeamData['team']) => void;
   onOpen: (path: string) => void;
 }) {
   const [data, setData] = useState<TeamData | null>(null);
   const [sdgs, setSdgs] = useState<{ number: number; title: string }[]>([]);
+  const [motions, setMotions] = useState<Motion[]>([]);
   const [loadError, setLoadError] = useState('');
   const [retry, setRetry] = useState(0);
   const [tab, setTab] = useState<'history' | 'identity'>('history');
@@ -28,12 +32,13 @@ export default function Dashboard({ onTeamChange, onOpen }: {
     Promise.all([
       api<TeamData>('/api/team', { signal: controller.signal }),
       api<{ sdgs: { number: number; title: string }[] }>('/api/sdgs', { signal: controller.signal }),
-    ]).then(([team, list]) => {
-      if (!controller.signal.aborted) { setData(team); setSdgs(list.sdgs); }
+      api<{ motions: Motion[] }>('/api/motions', { signal: controller.signal }),
+    ]).then(([team, list, motionList]) => {
+      if (!controller.signal.aborted) { setData(team); setSdgs(list.sdgs); setMotions(motionList.motions); }
     }).catch((caught: unknown) => { if (!controller.signal.aborted) setLoadError(errorMessage(caught)); });
     return () => controller.abort();
   }, [retry]);
-
+ 
   function changed(next: TeamData) { setData(next); onTeamChange(next.team); }
   return <main className="team-ui team-page">
     {loadError ? <div className="team-card"><p className="team-error" role="alert">{loadError}</p><button onClick={() => setRetry(value => value + 1)}>Coba lagi</button></div>
@@ -45,20 +50,24 @@ export default function Dashboard({ onTeamChange, onOpen }: {
           <section className="team-card"><p className="team-eyebrow">ANGGOTA</p><h2>{data.members.length} orang</h2><p className="team-muted">Satu akun, kontribusi bersama.</p></section>
         </div>
         <div className="team-tabs" aria-label="Bagian dashboard">
-          <button aria-pressed={tab === 'history'} onClick={() => setTab('history')}>Riwayat AI</button>
+          <button aria-pressed={tab === 'history' } onClick={() => setTab('history')}>Riwayat AI</button>
           <button aria-pressed={tab === 'identity'} onClick={() => setTab('identity')}>Identitas tim</button>
         </div>
-        {tab === 'history' ? <History /> : <Identity data={data} sdgs={sdgs} onChange={changed} />}
+        {tab === 'history' ? <History /> : <Identity data={data} sdgs={sdgs} motions={motions} onChange={changed} />}
         <footer className="team-footer">AI × SDGs · Discovery / Reasoning / Action</footer>
       </>}
   </main>;
 }
-
-function Identity({ data, sdgs, onChange }: {
-  data: TeamData; sdgs: { number: number; title: string }[]; onChange: (data: TeamData) => void;
+ 
+function Identity({ data, sdgs, motions, onChange }: {
+  data: TeamData; sdgs: { number: number; title: string }[]; motions: Motion[]; onChange: (data: TeamData) => void;
 }) {
   const [name, setName] = useState(data.team.team_name);
   const [motion, setMotion] = useState(data.team.motion || '');
+  const [motionChoice, setMotionChoice] = useState(() => {
+    const match = motions.find(item => item.text === (data.team.motion || ''));
+    return match ? String(match.id) : '__custom__';
+  });
   const [sdg, setSdg] = useState(String(data.team.sdg_number ?? ''));
   const [memberName, setMemberName] = useState('');
   const [editing, setEditing] = useState<number | null>(null);
@@ -66,6 +75,15 @@ function Identity({ data, sdgs, onChange }: {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  function pickMotion(value: string) {
+    setMotionChoice(value);
+    if (value === '__custom__') return;
+    const picked = motions.find(item => String(item.id) === value);
+    if (picked) {
+      setMotion(picked.text);
+      if (picked.sdgNumber) setSdg(String(picked.sdgNumber));
+    }
+  }
   async function mutate(path: string, method: string, body: unknown, success: string): Promise<boolean> {
     if (busy) return false;
     setBusy(true); setMessage(''); setError('');
@@ -90,7 +108,13 @@ function Identity({ data, sdgs, onChange }: {
       <form className="team-card" onSubmit={save}><h2>Identitas tim</h2><p className="team-muted">Username: {data.team.username}</p>
         <fieldset disabled={busy}>
           <label>Nama tim<input required value={name} onChange={event => setName(event.target.value)} /></label>
-          <label>Mosi tim<textarea rows={4} value={motion} onChange={event => setMotion(event.target.value)} /></label>
+          <label>Mosi tim<select aria-label="Pilih mosi dari Bank Mosi" value={motionChoice} onChange={event => pickMotion(event.target.value)}>
+            <option value="__custom__">+ Tulis mosi sendiri</option>
+            {motions.map(item => <option key={item.id} value={item.id}>{item.sdgNumber ? `SDG ${item.sdgNumber} — ` : ''}{item.text}</option>)}
+          </select></label>
+          {motionChoice === '__custom__'
+            ? <label>Tulis mosi sendiri<textarea rows={4} value={motion} onChange={event => setMotion(event.target.value)} /></label>
+            : <p className="team-muted">{motion}</p>}
           <label>SDG utama<select aria-label="SDG utama" value={sdg} onChange={event => setSdg(event.target.value)}><option value="">Belum dipilih</option>{sdgs.map(item => <option key={item.number} value={item.number}>SDG {item.number} — {item.title}</option>)}</select></label>
           <button className="team-primary" disabled={!name.trim()}>{busy ? 'Menyimpan…' : 'Simpan identitas'}</button>
         </fieldset>
@@ -113,6 +137,22 @@ function Identity({ data, sdgs, onChange }: {
 }
 
 function History() {
+  return (
+    <>
+      <SessionHistory />
+
+      <details className="history-legacy">
+        <summary>
+          Riwayat per interaksi (termasuk data lama)
+        </summary>
+
+        <LegacyHistory />
+      </details>
+    </>
+  );
+}
+
+function LegacyHistory() {
   const [action, setAction] = useState('');
   const [page, setPage] = useState(1);
   const [refresh, setRefresh] = useState(0);
@@ -141,7 +181,7 @@ function History() {
     <div className="team-pagination"><button disabled={loading || page <= 1} onClick={() => setPage(value => value - 1)}>← Sebelumnya</button><span>Halaman {page}{data ? ` / ${Math.max(1, data.pagination.totalPages)}` : ''}</span><button disabled={loading || !data?.pagination.hasNextPage} onClick={() => setPage(value => value + 1)}>Berikutnya →</button></div>
   </section>;
 }
-
+ 
 function InteractionCard({ item }: { item: Interaction }) {
   const meta = object(item.requestMeta);
   const issue = object(object(meta.payload).issue);
@@ -156,7 +196,7 @@ function InteractionCard({ item }: { item: Interaction }) {
     <details className="team-context"><summary>Konteks interaksi</summary><pre>{JSON.stringify(item.requestMeta, null, 2)}</pre></details>
   </details>;
 }
-
+ 
 function AiResponse({ value }: { value: unknown }) {
   if (typeof value === 'string') return <p className="team-pre">{value}</p>;
   if (Array.isArray(value)) return <div>{value.map((entry, index) => {
@@ -166,7 +206,7 @@ function AiResponse({ value }: { value: unknown }) {
   })}</div>;
   return <p>Jawaban tidak tersedia dalam format yang dikenali.</p>;
 }
-
+ 
 function Sources({ value }: { value: unknown }) {
   if (!Array.isArray(value) || value.length === 0) return null;
   return <div className="team-sources"><h4>Sumber yang disertakan AI</h4><ul>{value.map((entry, index) => {

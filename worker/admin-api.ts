@@ -3,6 +3,7 @@ import type { Env } from './lib/db';
 import { requireAdminSession } from './lib/admin-session';
 import { findSdgTitle } from './lib/sdgs';
 import { hashPassword } from './lib/password';
+import { listRuns } from './debate-runs';
 
 const ACTIONS = ['explore', 'factCheck', 'reviewArgument', 'debate', 'evaluateSolution'];
 // CASE protects legacy rows whose metadata is absent or malformed JSON.
@@ -193,7 +194,14 @@ function dateBoundary(value: string, name: string, nextDay = false): string {
   if (d.getUTCFullYear() > 9999) throw new InputError(`${name} di luar rentang.`);
   return d.toISOString().slice(0, 19).replace('T', ' ');
 }
-type PreviewRow = { id: number; team_id: number; team_name: string; sdg_number: number | null; sdg_title: string | null; action: string; position: string | null; backend: string | null; request_preview: string; response_preview: string; created_at: string };
+type PreviewRow = { request_meta: string | null; id: number; team_id: number; team_name: string; sdg_number: number | null; sdg_title: string | null; action: string; position: string | null; backend: string | null; request_preview: string; response_preview: string; created_at: string };
+function historicalContext(raw: string | null): { sdg: string | null; motion: string | null } {
+  const record = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const payload = record(record(parseJson(raw)).payload), issue = record(payload.issue);
+  const nonempty = (value: unknown) => typeof value === 'string' && value.trim() ? value.trim() : null;
+  return { sdg: nonempty(issue.sdg) || nonempty(payload.sdg), motion: nonempty(issue.motion) || nonempty(payload.motion) };
+}
+
 async function listInteractions(db: D1Database, search: URLSearchParams): Promise<Response> {
   const p = paging(search), conditions: string[] = [], params: unknown[] = [];
   if (search.has('teamId')) { conditions.push('i.team_id = ?'); params.push(positive(search.get('teamId')!, 'teamId')); }
@@ -207,15 +215,15 @@ async function listInteractions(db: D1Database, search: URLSearchParams): Promis
   if (from !== null && to !== null && from > to) throw new InputError('dateFrom tidak boleh melewati dateTo.');
   const order = search.get('order');
   if (order !== null && !['asc', 'desc'].includes(order)) throw new InputError('order harus asc atau desc.');
-  const direction = order === 'asc' ? 'ASC' : 'DESC'; // Sudah divalidasi whitelist di atas, aman diinterpolasi ke SQL.
+  const direction = order === 'desc' ? 'DESC' : 'ASC'; // Sudah divalidasi whitelist di atas, aman diinterpolasi ke SQL.
   const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
   const count = await queryOne<{ total: number }>(db, `SELECT COUNT(*) AS total FROM ai_interactions i ${where}`, params);
-  const rows = await queryAll<PreviewRow>(db, `SELECT i.id, i.team_id, t.team_name, t.sdg_number, t.sdg_title, i.action, i.position,
+  const rows = await queryAll<PreviewRow>(db, `SELECT i.id, i.team_id, i.request_meta, t.team_name, t.sdg_number, t.sdg_title, i.action, i.position,
     ${BACKEND} AS backend, substr(i.request_text, 1, 240) AS request_preview,
     substr(i.ai_response, 1, 240) AS response_preview, i.created_at
     FROM ai_interactions i JOIN teams t ON t.id = i.team_id ${where}
     ORDER BY i.created_at ${direction}, i.id ${direction} LIMIT ? OFFSET ?`, [...params, p.limit, p.offset]);
-  return json({ interactions: rows.map(row => ({ id: row.id, teamId: row.team_id, teamName: row.team_name, sdgNumber: row.sdg_number, sdgTitle: row.sdg_title, action: row.action, position: row.position, backend: row.backend,
+  return json({ interactions: rows.map(row => ({ id: row.id, teamId: row.team_id, teamName: row.team_name, ...historicalContext(row.request_meta), sdgNumber: row.sdg_number, sdgTitle: row.sdg_title, action: row.action, position: row.position, backend: row.backend,
     requestPreview: row.request_preview, responsePreview: row.response_preview, createdAt: utc(row.created_at) })), pagination: pagination(p, count?.total ?? 0) });
 }
 async function interactionDetail(db: D1Database, id: number): Promise<Response> {
@@ -228,6 +236,110 @@ async function interactionDetail(db: D1Database, id: number): Promise<Response> 
     aiMeta: parseJson(row.ai_meta), createdAt: utc(row.created_at) } });
 }
 
+type MotionRow = { id: number; text: string; sdg_number: number | null; created_at: string };
+function motionData(row: MotionRow) { return { id: row.id, text: row.text, sdgNumber: row.sdg_number, createdAt: row.created_at }; }
+function requiredMotionText(value: unknown): string {
+  if (typeof value !== 'string' || !value.trim() || value.trim().length > 500) throw new InputError('Teks mosi harus 1-500 karakter.');
+  return value.trim();
+}
+function optionalSdgNumberOnly(body: Record<string, unknown>): number | null {
+  if (!Object.hasOwn(body, 'sdgNumber') || body.sdgNumber === null) return null;
+  const sdg = body.sdgNumber;
+  if (typeof sdg !== 'number' || !Number.isInteger(sdg) || sdg < 1 || sdg > 17) throw new InputError('sdgNumber harus bilangan bulat 1-17 atau null.');
+  return sdg;
+}
+async function listMotionsAdmin(db: D1Database): Promise<Response> {
+  const rows = await queryAll<MotionRow>(db, 'SELECT id, text, sdg_number, created_at FROM motions ORDER BY sdg_number IS NULL, sdg_number ASC, id ASC');
+  return json({ motions: rows.map(motionData) });
+}
+/** POST /api/admin/motions — tambah mosi baru ke Bank Mosi identitas tim. */
+async function createMotion(request: Request, db: D1Database): Promise<Response> {
+  const body = await bodyObject(request);
+  only(body, ['text', 'sdgNumber']);
+  const text = requiredMotionText(body.text);
+  const sdgNumber = optionalSdgNumberOnly(body);
+  const result = await execute(db, 'INSERT INTO motions (text, sdg_number) VALUES (?, ?)', [text, sdgNumber]);
+  if (!result.success) throw new Error('Motion insert failed.');
+  return listMotionsAdmin(db);
+}
+
+async function updateMotion(
+  request: Request,
+  db: D1Database,
+  id: number,
+): Promise<Response> {
+  const body = await bodyObject(request);
+  only(body, ['text', 'sdgNumber']);
+
+  const fields: string[] = [];
+  const params: unknown[] = [];
+
+  if (Object.hasOwn(body, 'text')) {
+    fields.push('text = ?');
+    params.push(requiredMotionText(body.text));
+  }
+
+  if (Object.hasOwn(body, 'sdgNumber')) {
+    fields.push('sdg_number = ?');
+    params.push(optionalSdgNumberOnly(body));
+  }
+
+  if (!fields.length) {
+    throw new InputError('Tidak ada perubahan yang dikirim.');
+  }
+
+  const result = await execute(
+    db,
+    `UPDATE motions SET ${fields.join(', ')} WHERE id = ?`,
+    [...params, id],
+  );
+
+  if (!result.success) {
+    throw new Error('Motion update failed.');
+  }
+
+  if (!result.meta.changes) {
+    throw new InputError('Mosi tidak ditemukan.', 404);
+  }
+
+  return listMotionsAdmin(db);
+}
+
+/** DELETE /api/admin/motions/:id — hapus mosi dari Bank Mosi. */
+async function deleteMotion(db: D1Database, id: number): Promise<Response> {
+  const result = await execute(db, 'DELETE FROM motions WHERE id = ?', [id]);
+  if (!result.success) throw new Error('Motion delete failed.');
+  if (!result.meta.changes) throw new InputError('Mosi tidak ditemukan.', 404);
+  return listMotionsAdmin(db);
+}
+
+async function deleteInteraction(
+  db: D1Database,
+  id: number,
+): Promise<Response> {
+  const result = await execute(
+    db,
+    'DELETE FROM ai_interactions WHERE id = ?',
+    [id],
+  );
+
+  if (!result.success) {
+    throw new Error('Gagal menghapus interaksi.');
+  }
+
+  if (!result.meta.changes) {
+    throw new InputError(
+      'Interaksi tidak ditemukan atau sudah dihapus.',
+      404,
+    );
+  }
+
+  return json({
+    ok: true,
+    deletedId: id,
+  });
+}
+
 /** Register AFTER /api/admin/auth/ and BEFORE the frontend fallback. */
 export async function handleAdminApi(request: Request, env: Env): Promise<Response> {
   try {
@@ -237,16 +349,45 @@ export async function handleAdminApi(request: Request, env: Env): Promise<Respon
     let allowed: string[] = [], work: (() => Promise<Response>) | null = null;
     if (path === '/api/admin/overview') { allowed = ['GET']; work = () => overview(env.DB); }
     else if (path === '/api/admin/teams') { allowed = ['GET', 'POST']; work = () => request.method === 'GET' ? listTeams(env.DB, url.searchParams) : createTeam(request, env.DB); }
+    else if (path === '/api/admin/debate-sessions') {
+      allowed = ['GET'];
+
+      work = () => listRuns(
+        env.DB,
+        positive(
+          url.searchParams.get('teamId') || '',
+          'teamId',
+        ),
+        url.searchParams,
+      );
+    }
     else if (path === '/api/admin/interactions') { allowed = ['GET']; work = () => listInteractions(env.DB, url.searchParams); }
+    else if (path === '/api/admin/motions') { allowed = ['GET', 'POST']; work = () => request.method === 'GET' ? listMotionsAdmin(env.DB) : createMotion(request, env.DB); }
     else {
       const teamMatch = path.match(/^\/api\/admin\/teams\/([^/]+)$/);
       const memberList = path.match(/^\/api\/admin\/teams\/([^/]+)\/members$/);
       const member = path.match(/^\/api\/admin\/teams\/([^/]+)\/members\/([^/]+)$/);
       const interaction = path.match(/^\/api\/admin\/interactions\/([^/]+)$/);
+      const motion = path.match(/^\/api\/admin\/motions\/([^/]+)$/);
       if (teamMatch) { const id = positive(teamMatch[1], 'teamId'); allowed = ['GET', 'PATCH']; work = () => request.method === 'GET' ? teamDetail(env.DB, id) : updateTeam(request, env.DB, id); }
       else if (memberList) { const id = positive(memberList[1], 'teamId'); allowed = ['POST']; work = () => mutateMember(request, env.DB, id); }
       else if (member) { const teamId = positive(member[1], 'teamId'), memberId = positive(member[2], 'memberId'); allowed = ['PATCH', 'DELETE']; work = () => mutateMember(request, env.DB, teamId, memberId); }
-      else if (interaction) { const id = positive(interaction[1], 'interactionId'); allowed = ['GET']; work = () => interactionDetail(env.DB, id); }
+      else if (interaction) {
+        const id = positive(interaction[1], 'interactionId');
+
+        allowed = ['GET', 'DELETE'];
+
+        work = () =>
+          request.method === 'DELETE'
+            ? deleteInteraction(env.DB, id)
+            : interactionDetail(env.DB, id);
+      }
+      else if (motion) { const id = positive(motion[1], 'motionId'); allowed = ['PATCH', 'DELETE'];
+      work = () =>
+        request.method === 'PATCH'
+          ? updateMotion(request, env.DB, id)
+          : deleteMotion(env.DB, id);
+      }
     }
     if (!work) return json({ error: 'Endpoint admin tidak ditemukan.' }, 404);
     if (!allowed.includes(request.method)) return json({ error: 'Method Not Allowed' }, 405, { Allow: allowed.join(', ') });

@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import SessionHistory from '../history/SessionHistory';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, MouseEvent, ReactNode } from 'react';
 import { ACTIONS, AdminApiError, adminApi, backendName, date, message, object, text, useLoad } from './api';
 import type { Admin, Counts, Interaction, Interactions, Overview, Pagination, Preview, TeamDetail, TeamList } from './api';
+import BankMosi from './BankMosi';
 import './admin.css';
 
 type Navigate = (path: string) => void;
@@ -52,11 +54,19 @@ export default function AdminApp() {
   const url = new URL(location, window.location.origin), path = url.pathname;
   const teamMatch = path.match(/^\/admin\/teams\/([1-9]\d*)$/);
   const interactionMatch = path.match(/^\/admin\/interactions\/([1-9]\d*)$/);
-  const title = path.startsWith('/admin/teams') ? 'Tim & identitas' : path.startsWith('/admin/interactions') ? 'Jejak interaksi' : 'Ringkasan';
+  
+  const title = path.startsWith('/admin/teams')
+  ? 'Tim & identitas'
+  : path.startsWith('/admin/interactions')
+    ? 'Jejak interaksi'
+    : path.startsWith('/admin/motions')
+      ? 'Bank Mosi & SDG'
+      : 'Ringkasan';
+  
   return <div className="adm">
     <aside className="adm-sidebar"><Link to="/admin" navigate={navigate} className="adm-brand"><span>AI</span><strong>AI × SDGs<small>RUANG ADMIN</small></strong></Link>
       <p className="adm-nav-label">PEMANTAUAN</p><nav aria-label="Menu admin">
-        {[['/admin', 'Ringkasan', '01'], ['/admin/teams', 'Tim & identitas', '02'], ['/admin/interactions', 'Jejak interaksi', '03']].map(([to, label, number]) => <Link key={to} to={to} navigate={navigate} className={(to === '/admin' ? path === to || path === '/admin/login' : path.startsWith(to)) ? 'active' : ''}><span>{number}</span>{label}</Link>)}
+        {[['/admin', 'Ringkasan', '01'], ['/admin/teams', 'Tim & identitas', '02'], ['/admin/interactions', 'Jejak interaksi', '03'], ['/admin/motions', 'Bank Mosi & SDG', '04']].map(([to, label, number]) => <Link key={to} to={to} navigate={navigate} className={(to === '/admin' ? path === to || path === '/admin/login' : path.startsWith(to)) ? 'active' : ''}><span>{number}</span>{label}</Link>)}
       </nav><div className="adm-sidebar-foot"><p>Amati proses.<br />Pahami perkembangan.</p><a href="/dashboard">Buka ruang tim ↗</a><a href="/">Beranda platform ↗</a></div>
     </aside>
     <div className="adm-body"><header className="adm-top"><div><span className="adm-eyebrow">PENDAMPINGAN PEMBELAJARAN</span><strong>{title}</strong></div><div className="adm-account"><span>{admin.displayName}</span><button disabled={busy} onClick={logout}>{busy ? 'Keluar…' : 'Logout admin'}</button></div></header>
@@ -67,6 +77,7 @@ export default function AdminApp() {
           : teamMatch ? <TeamPage key={teamMatch[1]} id={teamMatch[1]} navigate={navigate} />
           : path === '/admin/interactions' ? <InteractionsPage key={location} search={url.searchParams} navigate={navigate} />
           : interactionMatch ? <InteractionPage key={interactionMatch[1]} id={interactionMatch[1]} navigate={navigate} />
+          : path === '/admin/motions' ? <BankMosi/>
           : <section className="adm-card"><h1>Halaman tidak ditemukan</h1><Link to="/admin" navigate={navigate}>Kembali ke ringkasan</Link></section>}
         <footer className="adm-footer">AI × SDGs · Catatan proses belajar tim · Waktu tampilan mengikuti zona waktu perangkat</footer>
       </main>
@@ -120,17 +131,24 @@ function TeamsPage({ search, navigate }: { search: URLSearchParams; navigate: Na
   const [q, setQ] = useState(search.get('q') || '');
   const [creating, setCreating] = useState(false);
   const state = useLoad<TeamList>(`/api/admin/teams?${search}`);
-  return <><PageHeading eyebrow="TIM & IDENTITAS" title="Kenali tim di balik gagasan." description="Lihat anggota, konteks mosi, dan jejak aktivitas setiap tim." />
-    <div className="adm-team-actions"><button className="adm-primary" onClick={() => setCreating(value => !value)}>{creating ? '× Batal' : '+ Tambah tim baru'}</button></div>
+  return <><div className="adm-page-toolbar"><PageHeading eyebrow="TIM & IDENTITAS" title="Daftar tim" description="Kelola identitas dan telusuri aktivitas setiap tim." />
+    <div className="adm-team-actions"><button className="adm-primary" onClick={() => setCreating(value => !value)}>{creating ? '× Batal' : '+ Tambah tim baru'}</button></div></div>
     {creating && <CreateTeamForm onCreated={id => { setCreating(false); navigate(`/admin/teams/${id}`); }} />}
     <form className="adm-filter adm-card" onSubmit={event => { event.preventDefault(); const params = new URLSearchParams({ page: '1', limit: '10' }); if (q.trim()) params.set('q', q.trim()); navigate(`/admin/teams?${params}`); }}><label>Cari tim<input placeholder="Nama tim, username, atau mosi" value={q} maxLength={200} onChange={event => setQ(event.target.value)} /></label><button className="adm-primary">Cari</button><button type="button" onClick={() => navigate('/admin/teams')}>Reset</button></form>
     <LoadState {...state} />{state.data && <><section className="adm-card"><h2>{state.data.pagination.total} tim ditemukan</h2>{state.data.teams.length ? <div className="adm-table-wrap"><table><thead><tr><th>Tim</th><th>Mosi profil</th><th>Anggota</th><th>Interaksi</th><th>Terakhir aktif*</th><th>Kelola</th></tr></thead><tbody>{state.data.teams.map(team => <tr key={team.id}><td><strong>{team.teamName}</strong><small>@{team.username} · ID {team.id}</small></td><td className="adm-cell-copy">{team.motion || 'Belum diisi'}<small>{team.sdgNumber ? `SDG ${team.sdgNumber} · ${team.sdgTitle}` : 'SDG belum dipilih'}</small></td><td>{team.memberCount}</td><td>{team.interactionCount}</td><td>{date(team.lastInteractionAt)}</td><td><Link to={`/admin/teams/${team.id}`} navigate={navigate}>Detail tim →</Link></td></tr>)}</tbody></table></div> : <p className="adm-empty">Tidak ada tim yang cocok pada halaman ini.</p>}<p className="adm-footnote">*Waktu interaksi tersimpan terakhir, bukan status online.</p></section><Pager pagination={state.data.pagination} navigate={navigate} path="/admin/teams" search={search} /></>}</>;
 }
 function CreateTeamForm({ onCreated }: { onCreated: (id: number) => void }) {
   const [username, setUsername] = useState(''), [password, setPassword] = useState(''), [teamName, setTeamName] = useState('');
-  const [motion, setMotion] = useState(''), [sdg, setSdg] = useState('');
+  const [motion, setMotion] = useState(''), [motionChoice, setMotionChoice] = useState('__custom__'), [sdg, setSdg] = useState('');
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const sdgs = useLoad<{ sdgs: { number: number; title: string }[] }>('/api/sdgs');
+  const motions = useLoad<{ motions: { id: number; text: string; sdgNumber: number | null }[] }>('/api/motions');
+  function pickMotion(value: string) {
+    setMotionChoice(value);
+    if (value === '__custom__') return;
+    const picked = motions.data?.motions.find(item => String(item.id) === value);
+    if (picked) { setMotion(picked.text); if (picked.sdgNumber) setSdg(String(picked.sdgNumber)); }
+  }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy) return; setBusy(true); setError('');
     try {
@@ -138,13 +156,20 @@ function CreateTeamForm({ onCreated }: { onCreated: (id: number) => void }) {
       onCreated(result.team.id);
     } catch (caught) { setError(message(caught)); } finally { setBusy(false); }
   }
-  return <form className="adm-card" onSubmit={submit}><h2>Buat tim baru</h2><p className="adm-muted">Akun login (username &amp; password) dan identitas awal tim dibuat sekaligus di sini.</p>
+  return <form className="adm-card adm-create-team" onSubmit={submit}><h2>Buat tim baru</h2><p className="adm-muted">Akun login (username &amp; password) dan identitas awal tim dibuat sekaligus di sini.</p>
     <fieldset disabled={busy}>
       <label>Username login<input autoComplete="off" required minLength={3} maxLength={50} pattern="[a-zA-Z0-9_.-]+" value={username} onChange={event => setUsername(event.target.value)} /></label>
       <label>Password awal<input type="password" autoComplete="new-password" required minLength={8} maxLength={200} value={password} onChange={event => setPassword(event.target.value)} /></label>
-      <label>Nama tim<input required maxLength={150} value={teamName} onChange={event => setTeamName(event.target.value)} /></label>
-      <label>Mosi profil (opsional)<textarea maxLength={5000} rows={3} value={motion} onChange={event => setMotion(event.target.value)} /></label>
-      <label>SDG utama (opsional)<select aria-label="SDG utama" value={sdg} disabled={!sdgs.data} onChange={event => setSdg(event.target.value)}><option value="">Belum dipilih</option>{sdgs.data?.sdgs.map(item => <option key={item.number} value={item.number}>SDG {item.number} — {item.title}</option>)}</select></label>
+      <label className="adm-full">Nama tim<input required maxLength={150} value={teamName} onChange={event => setTeamName(event.target.value)} /></label>
+      <label className="adm-full">Mosi profil (opsional)<select aria-label="Pilih mosi dari Bank Mosi" value={motionChoice} disabled={!motions.data} onChange={event => pickMotion(event.target.value)}>
+        <option value="__custom__">+ Tulis mosi sendiri</option>
+        {motions.data?.motions.map(item => <option key={item.id} value={item.id}>{item.sdgNumber ? `SDG ${item.sdgNumber} — ` : ''}{item.text}</option>)}
+      </select></label>
+      {motionChoice === '__custom__'
+        ? <label className="adm-full">Tulis mosi sendiri<textarea maxLength={5000} rows={3} value={motion} onChange={event => setMotion(event.target.value)} /></label>
+        : <p className="adm-muted">{motion}</p>}
+      <LoadState {...motions} />
+      <label className="adm-full">SDG utama (opsional)<select aria-label="SDG utama" value={sdg} disabled={!sdgs.data} onChange={event => setSdg(event.target.value)}><option value="">Belum dipilih</option>{sdgs.data?.sdgs.map(item => <option key={item.number} value={item.number}>SDG {item.number} — {item.title}</option>)}</select></label>
       <LoadState {...sdgs} />
       {error && <p className="adm-error" role="alert">{error}</p>}
       <button className="adm-primary" disabled={!username.trim() || password.length < 8 || !teamName.trim()}>{busy ? 'Membuat…' : 'Buat tim'}</button>
@@ -158,9 +183,22 @@ function TeamPage({ id, navigate }: { id: string; navigate: Navigate }) {
 }
 function TeamEditor({ initial, navigate }: { initial: TeamDetail; navigate: Navigate }) {
   const [data, setData] = useState(initial), [name, setName] = useState(initial.team.teamName), [motion, setMotion] = useState(initial.team.motion || ''), [sdg, setSdg] = useState(String(initial.team.sdgNumber ?? ''));
+  const [motionChoice, setMotionChoice] = useState('__custom__');
   const [newName, setNewName] = useState(''), [editId, setEditId] = useState<number | null>(null), [editName, setEditName] = useState('');
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const sdgs = useLoad<{ sdgs: { number: number; title: string }[] }>('/api/sdgs');
+  const motions = useLoad<{ motions: { id: number; text: string; sdgNumber: number | null }[] }>('/api/motions');
+  useEffect(() => {
+    if (!motions.data) return;
+    const match = motions.data.motions.find(item => item.text === (initial.team.motion || ''));
+    setMotionChoice(match ? String(match.id) : '__custom__');
+  }, [motions.data]);
+  function pickMotion(value: string) {
+    setMotionChoice(value);
+    if (value === '__custom__') return;
+    const picked = motions.data?.motions.find(item => String(item.id) === value);
+    if (picked) { setMotion(picked.text); if (picked.sdgNumber) setSdg(String(picked.sdgNumber)); }
+  }
   const base = `/api/admin/teams/${data.team.id}`;
   async function mutate(path: string, method: string, body: unknown, success: string) {
     if (busy) return false; setBusy(true); setError(''); setNotice('');
@@ -169,9 +207,19 @@ function TeamEditor({ initial, navigate }: { initial: TeamDetail; navigate: Navi
   }
   return <><PageHeading eyebrow={`DETAIL TIM / #${data.team.id}`} title={data.team.teamName} description={`@${data.team.username} · ${data.activity.totalInteractions} interaksi tersimpan · Terakhir: ${date(data.activity.lastInteractionAt)}`} />
     <div className="adm-inline-note">Mosi profil saat ini dapat berbeda dari konteks interaksi lama. Perubahan profil tidak menulis ulang riwayat atau pilihan Bank Mosi siswa.</div>
-    <div className="adm-team-actions"><Link to={`/admin/interactions?teamId=${data.team.id}&page=1&limit=10`} navigate={navigate} className="adm-button">Lihat riwayat tim →</Link></div>
+    <div className="adm-team-actions"><Link to={`/admin/interactions?teamId=${data.team.id}&page=1&limit=10&order=asc`} navigate={navigate} className="adm-button">Lihat riwayat tim →</Link></div>
     {error && <p className="adm-error" role="alert">{error}</p>}{notice && <p className="adm-success" role="status">{notice}</p>}
-    <div className="adm-editor-grid"><form className="adm-card" onSubmit={async event => { event.preventDefault(); await mutate(base, 'PATCH', { teamName: name.trim(), motion: motion.trim(), sdgNumber: sdg ? Number(sdg) : null }, 'Identitas tim berhasil disimpan.'); }}><h2>Identitas tim</h2><fieldset disabled={busy}><label>Nama tim<input maxLength={150} required value={name} onChange={event => setName(event.target.value)} /></label><label>Mosi profil<textarea maxLength={5000} rows={5} value={motion} onChange={event => setMotion(event.target.value)} /></label><label>SDG utama<select aria-label="SDG utama" value={sdg} disabled={!sdgs.data} onChange={event => setSdg(event.target.value)}><option value="">Belum dipilih</option>{sdgs.data?.sdgs.map(item => <option key={item.number} value={item.number}>SDG {item.number} — {item.title}</option>)}</select></label><LoadState {...sdgs} /><button className="adm-primary" disabled={!name.trim() || !sdgs.data}>{busy ? 'Menyimpan…' : 'Simpan identitas'}</button></fieldset></form>
+    <div className="adm-editor-grid"><form className="adm-card" onSubmit={async event => { event.preventDefault(); await mutate(base, 'PATCH', { teamName: name.trim(), motion: motion.trim(), sdgNumber: sdg ? Number(sdg) : null }, 'Identitas tim berhasil disimpan.'); }}><h2>Identitas tim</h2><fieldset className="adm-create-grid" disabled={busy}>
+      <label>Nama tim<input maxLength={150} required value={name} onChange={event => setName(event.target.value)} /></label>
+      <label>Mosi profil<select aria-label="Pilih mosi dari Bank Mosi" value={motionChoice} disabled={!motions.data} onChange={event => pickMotion(event.target.value)}>
+        <option value="__custom__">+ Tulis mosi sendiri</option>
+        {motions.data?.motions.map(item => <option key={item.id} value={item.id}>{item.sdgNumber ? `SDG ${item.sdgNumber} — ` : ''}{item.text}</option>)}
+      </select></label>
+      {motionChoice === '__custom__'
+        ? <label>Tulis mosi sendiri<textarea maxLength={5000} rows={5} value={motion} onChange={event => setMotion(event.target.value)} /></label>
+        : <p className="adm-muted">{motion}</p>}
+      <LoadState {...motions} />
+      <label>SDG utama<select aria-label="SDG utama" value={sdg} disabled={!sdgs.data} onChange={event => setSdg(event.target.value)}><option value="">Belum dipilih</option>{sdgs.data?.sdgs.map(item => <option key={item.number} value={item.number}>SDG {item.number} — {item.title}</option>)}</select></label><LoadState {...sdgs} /><button className="adm-primary" disabled={!name.trim() || !sdgs.data}>{busy ? 'Menyimpan…' : 'Simpan identitas'}</button></fieldset></form>
       <section className="adm-card"><h2>Anggota tim <span className="adm-tag">{data.members.length}</span></h2><p className="adm-muted">Identitas anggota, tanpa penilaian individu.</p><ul className="adm-members">{data.members.map(member => <li key={member.id}>{editId === member.id ? <form onSubmit={async event => { event.preventDefault(); if (await mutate(`${base}/members/${member.id}`, 'PATCH', { name: editName.trim() }, 'Nama anggota diperbarui.')) setEditId(null); }}><label>Nama anggota<input autoFocus required maxLength={150} disabled={busy} value={editName} onChange={event => setEditName(event.target.value)} /></label><div className="adm-row"><button disabled={busy || !editName.trim()}>Simpan nama</button><button type="button" disabled={busy} onClick={() => setEditId(null)}>Batal</button></div></form> : <><span>{member.name}</span><div className="adm-row"><button disabled={busy} onClick={() => { setEditId(member.id); setEditName(member.name); }}>Ubah</button><button className="adm-danger" disabled={busy} onClick={async () => { if (window.confirm(`Hapus ${member.name} dari tim ${data.team.teamName}?`)) await mutate(`${base}/members/${member.id}`, 'DELETE', undefined, 'Anggota dihapus.'); }}>Hapus</button></div></>}</li>)}</ul>{!data.members.length && <p className="adm-empty">Belum ada anggota.</p>}
       <form onSubmit={async event => { event.preventDefault(); if (await mutate(`${base}/members`, 'POST', { name: newName.trim() }, 'Anggota ditambahkan.')) setNewName(''); }}><label>Nama anggota baru<input required maxLength={150} disabled={busy} value={newName} onChange={event => setNewName(event.target.value)} /></label><button disabled={busy || !newName.trim()}>+ Tambah anggota</button></form></section>
     </div><section className="adm-card"><h2>Aktivitas yang tercatat</h2><ActivityCounts counts={data.activity.byAction} /></section>
@@ -184,20 +232,116 @@ function InteractionsPage({ search, navigate }: { search: URLSearchParams; navig
 }
 function TeamInteractionPicker({ search, navigate }: { search: URLSearchParams; navigate: Navigate }) {
   const [q, setQ] = useState(search.get('q') || '');
-  const params = new URLSearchParams({ page: '1', limit: '50' }); if (search.get('q')) params.set('q', search.get('q')!);
+  const params = new URLSearchParams({ page: search.get('page') || '1', limit: '10' }); if (search.get('q')) params.set('q', search.get('q')!);
   const state = useLoad<TeamList>(`/api/admin/teams?${params}`);
   function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const next = new URLSearchParams(); if (q.trim()) next.set('q', q.trim()); navigate(`/admin/interactions${next.toString() ? `?${next}` : ''}`); }
   return <><PageHeading eyebrow="JEJAK INTERAKSI" title="Pilih tim untuk ditelusuri." description="Klik salah satu tim untuk membaca urutan lengkap interaksi AI-nya, dari eksplorasi sampai evaluasi solusi." />
     <form className="adm-filter adm-card" onSubmit={submit}><label>Cari tim<input placeholder="Nama tim atau username" value={q} onChange={event => setQ(event.target.value)} /></label><button className="adm-primary">Cari</button>{search.get('q') && <button type="button" onClick={() => { setQ(''); navigate('/admin/interactions'); }}>Reset</button>}</form>
     <LoadState {...state} />{state.data && (state.data.teams.length ? <div className="adm-table-wrap"><table><thead><tr><th>Tim</th><th>Interaksi tersimpan</th><th>Terakhir aktif</th><th>Kelola</th></tr></thead><tbody>{state.data.teams.map(team => <tr key={team.id}><td><strong>{team.teamName}</strong><small>@{team.username} · ID {team.id}</small></td><td>{team.interactionCount}</td><td>{date(team.lastInteractionAt)}</td><td><Link to={`/admin/interactions?teamId=${team.id}&page=1&limit=10&order=asc`} navigate={navigate}>Lihat interaksi →</Link></td></tr>)}</tbody></table></div> : <p className="adm-empty">Tidak ada tim yang cocok.</p>)}
+    {state.data && <Pager pagination={state.data.pagination} navigate={navigate} path="/admin/interactions" search={search} />}
   </>;
 }
-function TeamInteractionTrail({ teamId, search, navigate }: { teamId: string; search: URLSearchParams; navigate: Navigate }) {
+
+function TeamInteractionTrail(props: {
+  teamId: string;
+  search: URLSearchParams;
+  navigate: Navigate;
+}) {
+  const team = useLoad<TeamDetail>(
+    `/api/admin/teams/${props.teamId}`,
+  );
+
+  return (
+    <>
+      <Link
+        to="/admin/interactions"
+        navigate={props.navigate}
+      >
+        ← Semua tim
+      </Link>
+
+      <PageHeading
+        eyebrow="RIWAYAT TIM"
+        title={
+          team.data?.team.teamName || 'Memuat tim…'
+        }
+        description={
+          team.data
+            ? `@${team.data.team.username}`
+            : ''
+        }
+      />
+
+      <LoadState {...team} />
+
+      <SessionHistory
+        key={props.teamId}
+        teamId={props.teamId}
+      />
+
+      <details className="history-legacy">
+        <summary>
+          Riwayat per interaksi (filter dan data lama)
+        </summary>
+
+        <LegacyTeamInteractionTrail {...props} />
+      </details>
+    </>
+  );
+}
+
+function LegacyTeamInteractionTrail({ teamId, search, navigate }: { teamId: string; search: URLSearchParams; navigate: Navigate }) {
   const [action, setAction] = useState(search.get('action') || ''), [backend, setBackend] = useState(search.get('backend') || '');
   const [from, setFrom] = useState(search.get('dateFrom') || ''), [to, setTo] = useState(search.get('dateTo') || ''), [error, setError] = useState('');
   const order = search.get('order') === 'desc' ? 'desc' : 'asc';
   const team = useLoad<TeamDetail>(`/api/admin/teams/${teamId}`);
-  const state = useLoad<Interactions>(`/api/admin/interactions?${search}`);
+  const effectiveSearch = new URLSearchParams(search); effectiveSearch.set('order', order);
+  const state = useLoad<Interactions>(`/api/admin/interactions?${effectiveSearch}`);
+
+  const [deleteNotice, setDeleteNotice] = useState('');
+
+  // Tampilkan hasil penghapusan.
+  useEffect(() => {
+    const changed = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{
+          id: number;
+          alreadyGone: boolean;
+        }>
+      ).detail;
+
+      setDeleteNotice(
+        detail.alreadyGone
+          ? `Interaksi #${detail.id} sudah tidak tersedia. Daftar diperbarui.`
+          : `Interaksi #${detail.id} berhasil dihapus.`,
+      );
+    };
+
+    window.addEventListener('admin-interactions-changed', changed);
+
+    return () => {
+      window.removeEventListener('admin-interactions-changed', changed);
+    };
+  }, []);
+
+  // Jika halaman terakhir habis, pindah ke halaman yang masih tersedia.
+  // Parameter filter lainnya tetap dipertahankan.
+  useEffect(() => {
+    if (!state.data || state.loading) return;
+
+    const lastPage = Math.max(
+      1,
+      state.data.pagination.totalPages,
+    );
+
+    if (state.data.pagination.page > lastPage) {
+      const next = new URLSearchParams(search);
+      next.set('page', String(lastPage));
+
+      navigate(`/admin/interactions?${next}`);
+    }
+  }, [state.data, state.loading, search, navigate]);
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(''); if (from && to && from > to) { setError('Tanggal awal tidak boleh melewati tanggal akhir.'); return; }
     const params = new URLSearchParams({ teamId, page: '1', limit: '10', order });
@@ -207,6 +351,7 @@ function TeamInteractionTrail({ teamId, search, navigate }: { teamId: string; se
   function toggleOrder() { const next = new URLSearchParams(search); next.set('order', order === 'asc' ? 'desc' : 'asc'); next.set('page', '1'); navigate(`/admin/interactions?${next}`); }
   return <><Link to="/admin/interactions" navigate={navigate}>← Semua tim</Link>
     <PageHeading eyebrow="JEJAK INTERAKSI" title={team.data ? team.data.team.teamName : 'Memuat tim…'} description={team.data ? `@${team.data.team.username} · ${team.data.activity.totalInteractions} interaksi tersimpan · Terakhir: ${date(team.data.activity.lastInteractionAt)}` : ''} />
+    <LoadState {...team} />
     {team.data && <section className="adm-card"><h2>Ringkasan tahapan tim ini</h2><ActivityCounts counts={team.data.activity.byAction} /></section>}
     <form className="adm-card adm-filters" onSubmit={submit}>
       <label>Aktivitas<select aria-label="Aktivitas" value={action} onChange={event => setAction(event.target.value)}><option value="">Semua aktivitas</option>{Object.entries(ACTIONS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
@@ -216,22 +361,144 @@ function TeamInteractionTrail({ teamId, search, navigate }: { teamId: string; se
       <div className="adm-row"><button className="adm-primary">Terapkan filter</button><button type="button" onClick={() => navigate(`/admin/interactions?teamId=${teamId}&page=1&limit=10&order=${order}`)}>Reset filter</button></div>
       <p className="adm-filter-help">Urutan saat ini: <strong>{order === 'asc' ? 'Terlama → Terbaru (alur proses)' : 'Terbaru → Terlama'}</strong>. <button type="button" onClick={toggleOrder}>Balik urutan</button></p>
     </form>
-    {error && <p className="adm-error" role="alert">{error}</p>}<LoadState {...state} />
-    {state.data && <><p className="adm-result-count">{state.data.pagination.total} interaksi ditemukan</p>
-      <div className="adm-interactions">{state.data.interactions.map((item, index) => <InteractionPreviewCard key={item.id} item={item} step={order === 'asc' ? (state.data!.pagination.page - 1) * state.data!.pagination.limit + index + 1 : state.data!.pagination.total - ((state.data!.pagination.page - 1) * state.data!.pagination.limit + index)} navigate={navigate} />)}</div>
+    {error && <p className="adm-error" role="alert">{error}</p>}
+    <LoadState {...state} />
+
+      {/* Notifikasi setelah menghapus interaksi */}
+      {deleteNotice && (
+        <p className="adm-card" role="status">
+          {deleteNotice}
+        </p>
+      )}
+
+      {state.data && <>
+        <p className="adm-result-count">
+          {state.data.pagination.total} interaksi ditemukan
+        </p>
+      <div className="adm-interactions">{state.data.interactions.map((item, index) => <InteractionPreviewCard key={item.id} item={item} step={(state.data!.pagination.page - 1) * state.data!.pagination.limit + index + 1} returnTo={`/admin/interactions?${effectiveSearch}`} navigate={navigate} />)}</div>
       {!state.data.interactions.length && <section className="adm-card adm-empty"><h2>Belum ada interaksi pada filter ini</h2><p>Ubah filter atau tampilkan semua aktivitas.</p></section>}
       <Pager pagination={state.data.pagination} navigate={navigate} path="/admin/interactions" search={search} />
     </>}
   </>;
 }
-function InteractionPreviewCard({ item, step, navigate }: { item: Preview; step: number; navigate: Navigate }) {
+function InteractionPreviewCard({ item, step, returnTo, navigate }: { item: Preview; step: number; returnTo: string; navigate: Navigate }) {
   return <article className="adm-card">
-    <div className="adm-section-head"><span className="adm-tag">Langkah {step} · {ACTIONS[item.action] || item.action}</span><small>{date(item.createdAt)} · #{item.id}</small></div>
-    <h2><Link to={`/admin/teams/${item.teamId}`} navigate={navigate}>{item.teamName}</Link></h2>
-    <p className="adm-muted">{backendName(item.backend)} · {item.position || 'Tanpa posisi'}{item.sdgNumber ? ` · SDG ${item.sdgNumber}` : ''}</p>
-    <div className="adm-preview"><section><h3>Input tim</h3><p>{item.requestPreview || 'Tidak ada teks input baru; aktivitas menggunakan konteks pilihan isu.'}</p></section><section><h3>Cuplikan respons AI</h3><p>{item.action === 'factCheck' ? 'Hasil pemeriksaan klaim tersedia sebagai daftar. Buka detail untuk membaca hasil dan sumbernya.' : item.responsePreview}</p></section></div>
-    <Link className="adm-detail-link" to={`/admin/interactions/${item.id}`} navigate={navigate}>Baca interaksi lengkap →</Link>
+    <div className="adm-section-head"><span className="adm-tag">Hasil {step} · {ACTIONS[item.action] || item.action}</span><small>{date(item.createdAt)} · #{item.id}</small></div>
+    <p className="adm-trail-motion">{item.motion || 'Mosi historis tidak tercatat'}</p>
+    <p className="adm-muted">{backendName(item.backend)} · {item.position || 'Tanpa posisi'}{item.sdg ? ` · ${item.sdg}` : ' · SDG historis tidak tercatat'}</p>
+    <details className="adm-trail-preview">
+  <summary>
+    <span className="adm-preview-closed">
+      Lihat cuplikan input dan respons
+    </span>
+    <span className="adm-preview-open">
+      Tutup cuplikan
+    </span>
+  </summary>
+
+  <div className="adm-preview">
+    <section>
+      <h3>Input tim</h3>
+      <p>
+        {item.requestPreview ||
+          'Tidak ada teks input baru; aktivitas menggunakan konteks pilihan isu.'}
+      </p>
+    </section>
+
+    <section>
+      <h3>Cuplikan respons AI</h3>
+      <p>
+        {item.action === 'factCheck'
+          ? 'Buka detail untuk membaca daftar klaim, hasil pemeriksaan, dan sumbernya.'
+          : item.responsePreview || 'Cuplikan respons tidak tersedia.'}
+      </p>
+    </section>
+  </div>
+</details>
+    <Link className="adm-detail-link" to={`/admin/interactions/${item.id}?${new URLSearchParams({ returnTo })}`} navigate={navigate}>Baca interaksi lengkap →</Link>
+    <DeleteInteractionButton item={item} />
   </article>;
+}
+
+function DeleteInteractionButton({ item }: { item: Preview }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const pending = useRef(false);
+
+  async function remove() {
+    if (pending.current) return;
+
+    const confirmed = window.confirm(
+      `Hapus permanen interaksi #${item.id}?\n` +
+      `Tim: ${item.teamName}\n` +
+      `Aktivitas: ${ACTIONS[item.action] || item.action}\n` +
+      `Waktu: ${date(item.createdAt)}\n\n` +
+      'Input siswa dan jawaban AI pada interaksi ini akan dihapus ' +
+      'dari riwayat tim dan admin. Tindakan ini tidak dapat dibatalkan.',
+    );
+
+    if (!confirmed) return;
+
+    pending.current = true;
+    setBusy(true);
+    setError('');
+
+    try {
+      await adminApi<{ ok: true; deletedId: number }>(
+        `/api/admin/interactions/${item.id}`,
+        { method: 'DELETE' },
+      );
+
+      window.dispatchEvent(
+        new CustomEvent('admin-interactions-changed', {
+          detail: {
+            id: item.id,
+            alreadyGone: false,
+          },
+        }),
+      );
+    } catch (failure) {
+      if (
+        failure instanceof AdminApiError &&
+        failure.status === 404
+      ) {
+        // Catatan mungkin sudah dihapus admin lain.
+        window.dispatchEvent(
+          new CustomEvent('admin-interactions-changed', {
+            detail: {
+              id: item.id,
+              alreadyGone: true,
+            },
+          }),
+        );
+      } else {
+        setError(message(failure));
+      }
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="adm-team-actions">
+      <button
+        type="button"
+        className="adm-danger"
+        disabled={busy}
+        onClick={remove}
+        aria-label={`Hapus interaksi #${item.id}`}
+      >
+        {busy ? 'Menghapus…' : 'Hapus interaksi'}
+      </button>
+
+      {error && (
+        <p className="adm-error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }
 
 const STAGE_INPUT_TITLE: Record<string, string> = {
@@ -245,7 +512,13 @@ const STAGE_OUTPUT_TITLE: Record<string, string> = {
 function InteractionPage({ id, navigate }: { id: string; navigate: Navigate }) {
   const state = useLoad<{ interaction: Interaction }>(`/api/admin/interactions/${id}`), item = state.data?.interaction;
   const meta = object(item?.requestMeta), payload = object(meta.payload), issue = object(payload.issue);
-  return <><Link to="/admin/interactions" navigate={navigate}>← Semua interaksi</Link><LoadState {...state} />{item && <>
+  const returnValue = new URLSearchParams(window.location.search).get('returnTo');
+  let returnUrl: URL | null = null;
+  try { returnUrl = returnValue ? new URL(returnValue, window.location.origin) : null; } catch { /* Use the team's history for malformed return URLs. */ }
+  const back = returnUrl?.origin === window.location.origin && returnUrl.pathname === '/admin/interactions'
+    ? returnUrl.pathname + returnUrl.search
+    : item ? `/admin/interactions?teamId=${item.teamId}&page=1&limit=10&order=asc` : '/admin/interactions';
+  return <><Link to={back} navigate={navigate}>← Kembali ke riwayat</Link><LoadState {...state} />{item && <>
     <PageHeading eyebrow={`INTERAKSI #${item.id}`} title={ACTIONS[item.action] || item.action} description={`${item.teamName} · ${date(item.createdAt)} · ${backendName(text(meta.backend))}`} />
     <section className="adm-card adm-context"><p className="adm-eyebrow">KONTEKS SAAT INTERAKSI</p><h2>{text(issue.motion) || text(payload.motion) || 'Mosi tidak tercatat'}</h2><p>{text(issue.title) || 'Isu tidak tercatat'}</p><div className="adm-row"><span className="adm-tag">{text(issue.sdg) || text(payload.sdg) || 'SDG tidak tercatat'}</span><span className="adm-tag">{item.position || 'Posisi tidak tercatat'}</span><Link to={`/admin/teams/${item.teamId}`} navigate={navigate}>Profil tim saat ini →</Link></div><p className="adm-footnote">Konteks historis ini dapat berbeda dari identitas tim yang telah diperbarui.</p></section>
     <div className="adm-conversation">

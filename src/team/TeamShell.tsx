@@ -2,14 +2,33 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, MouseEvent } from 'react';
 import App from '../App';
 import AppAI from '../AppAI';
-import Home from '../Home';
 import Dashboard from './Dashboard';
 import { api, ApiError } from './api';
 import type { TeamData } from './api';
 import './team.css';
 
-const routes = ['/', '/login', '/dashboard', '/source-pack', '/ai'];
-const currentPath = () => window.location.pathname.replace(/\/+$/, '') || '/';
+type Mode = '/source-pack' | '/ai';
+const MODE_KEY = 'team-mode';
+const routes = ['/login', '/dashboard', '/source-pack', '/ai'];
+// Halaman awal ('/') selalu diarahkan ke login tim.
+const currentPath = () => {
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  return path === '/' ? '/login' : path;
+};
+const isMode = (value: unknown): value is Mode => value === '/source-pack' || value === '/ai';
+function readMode(): Mode | null {
+  try { const value = window.localStorage.getItem(MODE_KEY); return isMode(value) ? value : null; } catch { return null; }
+}
+// Sudah login lalu membuka halaman awal/login: langsung ke mode terakhir yang dipilih.
+function savedModeForLogin(): Mode | null {
+  const saved = readMode();
+  if (!saved || currentPath() !== '/login') return null;
+  window.history.replaceState({}, '', saved);
+  return saved;
+}
+function saveMode(value: Mode | null) {
+  try { if (value) window.localStorage.setItem(MODE_KEY, value); else window.localStorage.removeItem(MODE_KEY); } catch { /* storage bisa diblokir; abaikan */ }
+}
 
 export default function TeamShell() {
   const [path, setPath] = useState(currentPath);
@@ -20,6 +39,7 @@ export default function TeamShell() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [visited, setVisited] = useState<string[]>([]);
   const [epoch, setEpoch] = useState(0);
+  const [mode, setMode] = useState<Mode | null>(readMode);
   const previousTeam = useRef<number | null>(null);
 
   function navigate(next: string) {
@@ -46,6 +66,8 @@ export default function TeamShell() {
     try {
       const data = await api<TeamData>('/api/team');
       acceptTeam(data.team);
+      const saved = savedModeForLogin();
+      if (saved) setPath(saved);
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) setStatus('out');
       else {
@@ -63,11 +85,14 @@ export default function TeamShell() {
       previousTeam.current = data.team.id;
       setTeam(data.team);
       setStatus('in');
+      const saved = savedModeForLogin();
+      if (saved) setPath(saved);
     }).catch((caught: unknown) => {
       if (!active) return;
       if (caught instanceof ApiError && caught.status === 401) setStatus('out');
       else { setStatus('error'); setError(caught instanceof Error ? caught.message : 'Sesi belum dapat diperiksa.'); }
     });
+    if (window.location.pathname !== '/login' && currentPath() === '/login') window.history.replaceState({}, '', '/login');
     const pop = () => setPath(currentPath());
     const expired = () => { setStatus('out'); setNotice('Sesi berakhir. Login kembali untuk melanjutkan.'); };
     const unsaved = () => setNotice('Jawaban AI sudah diterima, tetapi belum tersimpan di riwayat. Salin jawaban penting sebelum menutup halaman.');
@@ -85,6 +110,7 @@ export default function TeamShell() {
   useEffect(() => {
     if (status === 'in' && (path === '/ai' || path === '/source-pack')) {
       setVisited(values => values.includes(path) ? values : [...values, path]);
+      setMode(path); saveMode(path);
     }
   }, [status, path]);
 
@@ -106,6 +132,7 @@ export default function TeamShell() {
       await api('/api/auth/logout', { method: 'POST' });
       setTeam(null);
       previousTeam.current = null;
+      setMode(null); saveMode(null);
       setVisited([]);
       setEpoch(value => value + 1);
       setStatus('out');
@@ -124,33 +151,27 @@ export default function TeamShell() {
   const showLogin = status === 'out' && (protectedPath || path === '/login');
   return <>
     <nav className="team-ui team-topbar" aria-label="Navigasi akun tim">
-      <a className="team-brand" href="/" onClick={event => follow(event, '/')}>AI × SDGs</a>
-      <div className="team-toplinks">
-        <a aria-current={path === '/dashboard' ? 'page' : undefined} href="/dashboard" onClick={event => follow(event, '/dashboard')}>Dashboard</a>
-        <a aria-current={path === '/source-pack' ? 'page' : undefined} href="/source-pack" onClick={event => follow(event, '/source-pack')}>Source Pack</a>
-        <a aria-current={path === '/ai' ? 'page' : undefined} href="/ai" onClick={event => follow(event, '/ai')}>AI + Web</a>
-      </div>
-            {status === 'in' ? <div className="team-account"><span>{team?.team_name}</span><button disabled={loggingOut} onClick={logout}>{loggingOut ? 'Keluar…' : 'Logout'}</button></div>
+      <span className="team-brand">AI × SDGs</span>
+      {status === 'in' ? <div className="team-account"><a href="/dashboard" title="Buka dashboard tim" onClick={event => follow(event, '/dashboard')}>{team?.team_name}</a><button disabled={loggingOut} onClick={logout}>{loggingOut ? 'Keluar…' : 'Logout'}</button></div>
         : <div className="team-auth-links">
-            <a href="/login" className="team-login-button" onClick={event => follow(event, '/login')}>Login tim</a>
             {/* Sengaja bukan follow()/routes client-side: /admin dimuat main.tsx sebagai app React terpisah (AdminApp). */}
-            <a href="/admin" className="team-admin-link">Login admin</a>
+            <a href="/admin" className="team-login-button">Login Admin</a>
           </div>}
     </nav>
     <div className="team-ui team-alerts">
       {notice && <div className="team-notice" role="status">{notice}<button aria-label="Tutup pemberitahuan" onClick={() => setNotice('')}>×</button></div>}
       {error && status !== 'error' && <p className="team-error" role="alert">{error}</p>}
     </div>
-    {path === '/' && <Home />}
     {!routes.includes(path) && <main className="team-ui team-page"><h1>Halaman tidak ditemukan</h1><a href="/dashboard">Buka dashboard</a></main>}
     {(protectedPath || path === '/login') && status === 'checking' && <main className="team-ui team-page" role="status">Memeriksa sesi…</main>}
     {(protectedPath || path === '/login') && status === 'error' && <main className="team-ui team-page"><p role="alert">{error}</p><button onClick={checkSession}>Coba lagi</button></main>}
-    {showLogin && <Login onSuccess={async () => {
+    {showLogin && <Login initialMode={isMode(path) ? path : mode ?? ''} onSuccess={async (chosen) => {
       const data = await api<TeamData>('/api/team');
       acceptTeam(data.team);
-      if (path === '/login') navigate('/dashboard');
+      setMode(chosen); saveMode(chosen);
+      navigate(chosen);
     }} />}
-    {status === 'in' && (path === '/dashboard' || path === '/login') && <Dashboard key={`${epoch}-${team?.id}`} onTeamChange={setTeam} onOpen={navigate} />}
+    {status === 'in' && (path === '/dashboard' || path === '/login') && <Dashboard key={`${epoch}-${team?.id}`} onTeamChange={setTeam} onOpen={() => navigate(mode ?? '/source-pack')} />}
     {/* Keep activity state mounted during dashboard navigation and same-team re-login. */}
     <div key={epoch}>
       {visited.includes('/source-pack') && <section hidden={status !== 'in' || path !== '/source-pack'}><App /></section>}
@@ -159,18 +180,19 @@ export default function TeamShell() {
   </>;
 }
 
-function Login({ onSuccess }: { onSuccess: () => Promise<void> }) {
+function Login({ initialMode, onSuccess }: { initialMode: Mode | ''; onSuccess: (mode: Mode) => Promise<void> }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [chosenMode, setChosenMode] = useState<Mode | ''>(initialMode);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy) return;
+    if (busy || !chosenMode) return;
     setBusy(true); setError('');
     try {
       await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ username: username.trim(), password }) });
-      await onSuccess();
+      await onSuccess(chosenMode);
     } catch (caught) { setError(caught instanceof Error ? caught.message : 'Login gagal.'); }
     finally { setBusy(false); }
   }
@@ -180,6 +202,11 @@ function Login({ onSuccess }: { onSuccess: () => Promise<void> }) {
       <p className="team-eyebrow">SELAMAT DATANG</p><h2>Masuk sebagai tim</h2><p className="team-muted">Gunakan akun yang diberikan pendamping.</p>
       <label>Username tim<input autoComplete="username" required value={username} onChange={event => setUsername(event.target.value)} /></label>
       <label>Password<input type="password" autoComplete="current-password" required value={password} onChange={event => setPassword(event.target.value)} /></label>
+      <label>Mode aktivitas<select required value={chosenMode} onChange={event => setChosenMode(isMode(event.target.value) ? event.target.value : '')}>
+        <option value="" disabled>Pilih mode…</option>
+        <option value="/source-pack">Source Pack</option>
+        <option value="/ai">AI + Web</option>
+      </select></label>
       {error && <p className="team-error" role="alert">{error}</p>}
       <button className="team-primary" disabled={busy}>{busy ? 'Memproses…' : 'Masuk ke ruang tim →'}</button>
     </form>

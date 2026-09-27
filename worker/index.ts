@@ -14,6 +14,12 @@
  *   → V2 — Gemini AI + Google Search
  *   → worker/gemini-ai.ts
  *
+ * - POST /api/auth/login
+ * - POST /api/auth/logout
+ * - GET  /api/auth/me
+ *   → Login/logout/cek-sesi tim
+ *   → worker/auth.ts
+ *
  * Selain route API, request lainnya diteruskan ke
  * frontend React/Vite melalui ASSETS.
  */
@@ -32,6 +38,8 @@ import {
 import { handleAiWithLogging, handleListInteractions } from './interactions';
 import { handleAdminAuth } from './admin-auth';
 import { handleAdminApi } from './admin-api';
+import { handleListMotions } from './motions';
+import { handleRuns } from './debate-runs';
 import type { Env } from './lib/db';
 
 
@@ -45,6 +53,10 @@ export default {
 
     if (url.pathname.startsWith('/api/admin/')) {
       return handleAdminApi(request, env);
+    }
+
+    if (url.pathname === '/api/debate-sessions') {
+      return handleRuns(request, env);
     }
 
     // Backend V1: /api/gemini
@@ -121,6 +133,17 @@ export default {
         });
       }
       return handleListSdgs();
+    }
+
+    // Bank Mosi: /api/motions (publik, tidak perlu login)
+    if (url.pathname === '/api/motions') {
+      if (request.method !== 'GET') {
+        return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+          status: 405,
+          headers: { 'Content-Type': 'application/json; charset=utf-8', Allow: 'GET' },
+        });
+      }
+      return handleListMotions(env);
     }
 
     // Team: /api/team
