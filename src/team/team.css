@@ -18,7 +18,7 @@
 .team-ui input, .team-ui select, .team-ui textarea { display: block; width: 100%; min-width: 0; background: #fbfbfe; color: #25243b; border: 1px solid #dcdce8; border-radius: 10px; padding: 11px 12px; font: inherit; font-weight: 400; margin-top: 6px; }
 .team-ui textarea { resize: vertical; }
 .team-ui fieldset { border: 0; padding: 0; min-width: 0; }
-.team-topbar { position: sticky; top: 0; z-index: 110; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding: 15px 28px; background: white; border-bottom: 1px solid #e6e7ef; box-shadow: 0 3px 16px #25243b06; }
+.team-topbar { position: fixed; top: 0; left: 0; right: 0; width: 100%; box-sizing: border-box; z-index: 1100; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding: 15px 28px; background: white; border-bottom: 1px solid #e6e7ef; box-shadow: 0 3px 16px #25243b06; }
 .team-toplinks, .team-account, .team-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .team-toplinks a { font-size: 13px; padding: 7px 9px; border-radius: 8px; }
 .team-toplinks a[aria-current] { background: #f0edff; font-weight: 700; }
@@ -69,7 +69,7 @@
 .team-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 24px 0; font-size: 12px; }
 .team-empty { padding: 28px 16px; color: #73738a; }
 .team-footer { color: #9292a5; text-align: center; font-size: 11px; margin-top: 48px; }
-.team-alerts { position: relative; z-index: 105; background: #fff; }
+.team-alerts { position: relative; z-index: 105; margin-top: var(--team-topbar-height, 74px); background: #fff; }
 .team-notice { padding: 12px 24px; background: #fff6df; color: #6c511c; display: flex; justify-content: space-between; gap: 15px; align-items: center; }
 .team-ui .team-error { padding: 12px 16px; border-radius: 10px; background: #fff0f1; color: #a12b3b; }
 .team-ui .team-success { padding: 12px 16px; border-radius: 10px; background: #eaf7f0; color: #216340; }
