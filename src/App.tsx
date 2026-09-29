@@ -98,7 +98,7 @@ const SAMPLE_ISSUES: Issue[] = [
   {
     id: 1,
     sdg: 'SDG 8',
-    title: 'Dampak Perkembangan AI terhadap Lapangan Kerja',
+    title: 'AI dan Dunia Kerja',
     blurb: 'AI dapat mengubah jenis pekerjaan, tugas, kebutuhan keterampilan, dan pola penciptaan lapangan kerja.',
     motion: 'Perkembangan AI akan menciptakan lebih banyak lapangan pekerjaan daripada menghilangkannya.',
     context: 'Perkembangan AI generatif dan otomatisasi dapat mengubah tugas dalam banyak pekerjaan. Perdebatan perlu membedakan pekerjaan yang benar-benar hilang, pekerjaan yang berubah, serta pekerjaan baru yang muncul. Dampaknya juga dapat berbeda menurut sektor, kelompok pekerja, keterampilan, dan negara.',
@@ -143,7 +143,7 @@ const SAMPLE_ISSUES: Issue[] = [
   {
     id: 2,
     sdg: 'SDG 12 & SDG 13',
-    title: 'Manfaat Pengembangan AI dan Dampak Lingkungannya',
+    title: 'AI dan Lingkungan',
     blurb: 'AI membutuhkan listrik, air, perangkat keras, dan material, tetapi juga dapat digunakan untuk efisiensi energi dan lingkungan.',
     motion: 'Manfaat pengembangan AI lebih besar daripada dampaknya terhadap lingkungan.',
     context: 'Pengembangan dan penggunaan AI bergantung pada pusat data, listrik, sistem pendingin, perangkat keras, dan rantai pasok material. Di sisi lain, AI dapat digunakan untuk optimasi energi, pemantauan emisi, dan aplikasi lingkungan. Perbandingan perlu melihat seluruh siklus hidup dan konteks penggunaan, bukan satu dampak saja.',
@@ -188,7 +188,7 @@ const SAMPLE_ISSUES: Issue[] = [
   {
     id: 3,
     sdg: 'SDG 4',
-    title: 'Penggunaan AI dalam Pembelajaran',
+    title: 'AI dan Pendidikan',
     blurb: 'AI dapat membantu belajar, tetapi juga membawa risiko kesalahan, bias, privasi, dan ketergantungan.',
     motion: 'Penggunaan AI dalam pembelajaran lebih banyak merugikan dibandingkan menguntungkan siswa.',
     context: 'AI generatif semakin digunakan untuk mencari informasi, membuat ringkasan, mendapatkan umpan balik, dan membantu mengerjakan tugas. Dampaknya tidak otomatis sama untuk semua kegiatan belajar. Manfaat seperti personalisasi dan aksesibilitas perlu ditimbang dengan risiko kesalahan, bias, privasi, dan ketergantungan.',
@@ -233,7 +233,7 @@ const SAMPLE_ISSUES: Issue[] = [
   {
     id: 4,
     sdg: 'SDG 16',
-    title: 'Penyebaran Informasi Palsu: AI-generated vs Human-generated',
+    title: 'AI dan Informasi',
     blurb: 'Konten sintetis dapat dibuat cepat dan dalam skala besar, tetapi dampak informasi palsu juga bergantung pada manusia dan konteks distribusinya.',
     motion: 'Penyebaran informasi yang dibuat AI lebih berbahaya bagi masyarakat daripada informasi palsu yang dibuat manusia.',
     context: 'Generative AI mempermudah pembuatan teks, gambar, audio, dan video sintetis. Tantangan utamanya mencakup skala, kecepatan, kredibilitas, kemampuan deteksi, dan dampak pada kepercayaan publik. Perbandingan dengan informasi palsu buatan manusia juga perlu mempertimbangkan niat dan ekosistem penyebarannya.',
@@ -455,7 +455,11 @@ const SAMPLE_ISSUES: Issue[] = [
       },
     ],
   },
-];
+]; 
+
+// Bank Mosi resmi yang ditampilkan di V1. Data mosi lain tetap dipertahankan
+// di SAMPLE_ISSUES agar dapat diaktifkan kembali tanpa menghapusnya.
+const ENABLED_ISSUE_IDS = new Set([1, 2, 3, 4]);
 
 const verdictMeta: Record<ClaimResult['verdict'], { label: string; color: string }> = {
   verified: { label: 'Terverifikasi', color: 'bg-[#0F766E]/20 text-[#0F766E]' },
@@ -1005,9 +1009,9 @@ export default function App() {
         <div className="animate-[rise_0.25s_ease]">
           <p className="font-mono text-xs tracking-wider text-[#0F766E] uppercase mb-2.5">01 — Issue Bank</p>
           <h1 className="font-display font-semibold text-[clamp(28px,4vw,42px)] leading-[1.1] mb-4">Pilih satu isu SDGs</h1>
-          <p className="text-[#70758B] text-base leading-relaxed max-w-[60ch] mb-8">Pilih satu dari 8 mosi pada Bank Mosi. Mosi yang dipilih menjadi konteks seluruh perjalanan.</p>
+          <p className="text-[#70758B] text-base leading-relaxed max-w-[60ch] mb-8">Pilih satu dari 4 mosi resmi pada Bank Mosi. Mosi yang dipilih menjadi konteks seluruh perjalanan.</p>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-            {SAMPLE_ISSUES.map((issue) => (
+            {SAMPLE_ISSUES.filter((issue) => ENABLED_ISSUE_IDS.has(issue.id)).map((issue) => (
               <button key={issue.id} type="button" onClick={() => setSelectedIssue(issue)} className={`text-left h-full flex flex-col bg-white/90 border rounded-[20px] p-[18px] cursor-pointer transition-all hover:-translate-y-0.5 hover:border-[#0F766E] ${selectedIssue?.id === issue.id ? 'border-[#F2A93B]/60 bg-[#FFF8EC]/10' : 'border-[#E6E7EF]'}`}>
                 <div className="font-mono text-[11px] text-[#0F766E]">{issue.sdg}</div>
                 <h3 className="font-display text-base my-1.5">{issue.title}</h3>
