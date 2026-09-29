@@ -799,7 +799,7 @@ export default function App() {
     setDebateLog([
       {
         who: 'ai',
-        text: `Argumenmu: "${argument.claim || '(belum diisi)'}". Jelaskan mengapa bukti yang kamu punya cukup kuat. Ingat, saya hanya sparring partner sebelum debat dengan siswa lain.`,
+        text: `Argumenmu: "${argument.claim || '(belum diisi)'}". Jelaskan bagaimana bukti yang kamu punya mendukung klaimmu dan bagaimana kamu menjawab bagian mosi yang belum sepenuhnya dibuktikan. Saya hanya sparring partner sebelum debat dengan siswa lain.`,
       },
     ]);
   }, [currentStage, debateLog.length, argument.claim]);
@@ -1046,7 +1046,13 @@ export default function App() {
       setDebateLog([...history, { who: 'ai', text: reply }]);
       setSparringRound((previous) => previous + 1);
     } catch (error) {
-      setDebateLog([...history, { who: 'ai', text: error instanceof Error ? `Sparring gagal: ${error.message}` : 'Sparring gagal dijalankan.' }]);
+      const messageText = error instanceof Error ? error.message : 'Sparring gagal dijalankan.';
+      const isTruncated = /terpotong|MAX_TOKENS|batas output/i.test(messageText);
+      const fallbackReply = 'Pertanyaan penguji: bukti ILO mendukung perubahan tugas, tetapi belum membuktikan jumlah pekerjaan baru. Bukti tambahan apa yang akan kamu gunakan untuk mendukung bagian mosi tersebut?';
+      setDebateLog([...history, {
+        who: 'ai',
+        text: isTruncated ? fallbackReply : `Sparring gagal: ${messageText}`,
+      }]);
     } finally {
       setDebateLoading(false);
     }

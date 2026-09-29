@@ -435,26 +435,21 @@ Pastikan respons selesai.
       prompt = `
 Anda adalah sparring partner sebelum debat siswa PRO dan KONTRA.
 
-KONTEKS MOSI
-SDG: ${issue?.sdg || '-'}
-Isu: ${issue?.title || '-'}
-Mosi: ${issue?.motion || '-'}
-Konteks: ${issue?.context || '-'}
-Posisi siswa: ${payload?.position || '-'}
+MOSI: ${issue?.motion || '-'}
+ISU: ${issue?.title || '-'}
+POSISI SISWA: ${payload?.position || '-'}
 
-ARGUMEN SISWA
-Klaim: ${payload?.arg?.claim || ''}
-Alasan: ${payload?.arg?.reason || ''}
-Bukti: ${payload?.arg?.evidence || ''}
-Respons siswa ronde ${payload?.round || 1}: ${payload?.msg || ''}
+KLAIM: ${payload?.arg?.claim || ''}
+ALASAN: ${payload?.arg?.reason || ''}
+BUKTI: ${payload?.arg?.evidence || ''}
+RESPONS SISWA RONDE ${payload?.round || 1}: ${payload?.msg || ''}
 
-Berikan SATU sanggahan atau SATU pertanyaan penguji yang konkret dan langsung berkaitan dengan mosi. Dorong siswa menghubungkan klaim dengan bukti dan mengakui batasan bukti bila perlu.
-Jangan mengarang data baru atau membawa topik dari mosi lain.
-Maksimal 130 kata.
-Tanpa Markdown.
-Pastikan respons selesai.
+Berikan SATU pertanyaan penguji atau SATU sanggahan yang paling penting. Fokus pada hubungan klaim, alasan, bukti, dan gap bukti terhadap mosi. Jangan mengarang data baru.
+Maksimal 80 kata.
+Tanpa Markdown. Langsung ke inti.
 `.trim();
-      maxOutputTokens = 850;
+      maxOutputTokens = 700;
+      thinkingLevel = 'minimal';
     } else if (action === 'evaluateSolution') {
       const issue = payload?.issue || {};
       const sourcePack: SourcePackItem[] = Array.isArray(issue?.sources) ? issue.sources : [];
