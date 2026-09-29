@@ -18,6 +18,7 @@ const ALLOWED_ACTIONS = new Set([
   'reviewArgument',
   'debate',
   'evaluateSolution',
+  'recommendSolution',
 ]);
 
 function asObject(value: unknown): JsonObject {
@@ -76,6 +77,13 @@ function extractStudentInput(
     case 'evaluateSolution':
       return asText(payload.solution);
 
+    case 'recommendSolution':
+      // Rekomendasi AI menggunakan solusi siswa + hasil evaluasi sebagai input.
+      return [
+        asText(payload.solution),
+        asText(payload.evaluation),
+      ].filter(Boolean).join('\n\n');
+
     default:
       return '';
   }
@@ -102,6 +110,7 @@ function extractPayloadMeta(payload: JsonObject): JsonObject {
     'round',
     'msg',
     'solution',
+    'evaluation',
   ];
 
   const result: JsonObject = {};
@@ -242,7 +251,9 @@ export async function handleAiWithLogging(
       inputKind:
         action === 'explore'
           ? 'context_selection'
-          : 'submitted_content',
+          : action === 'recommendSolution'
+            ? 'solution_recommendation_request'
+            : 'submitted_content',
       hasStudentText: requestText.trim().length > 0,
       payload: extractPayloadMeta(payload),
     };

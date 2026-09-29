@@ -5,7 +5,7 @@ import { findSdgTitle } from './lib/sdgs';
 import { hashPassword } from './lib/password';
 import { listRuns } from './debate-runs';
 
-const ACTIONS = ['explore', 'factCheck', 'reviewArgument', 'debate', 'evaluateSolution'];
+const ACTIONS = ['explore', 'factCheck', 'reviewArgument', 'debate', 'evaluateSolution', 'recommendSolution'];
 // CASE protects legacy rows whose metadata is absent or malformed JSON.
 const BACKEND = "CASE WHEN json_valid(i.request_meta) THEN json_extract(i.request_meta, '$.backend') ELSE NULL END";
 const TEAM_COLUMNS = 't.id, t.username, t.team_name, t.motion, t.sdg_number, t.sdg_title, t.created_at, t.updated_at';
