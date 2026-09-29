@@ -123,6 +123,7 @@ async function generateContent(params: {
   prompt: string;
   structured?: boolean;
   maxOutputTokens?: number;
+  thinkingLevel?: 'minimal' | 'low' | 'medium' | 'high';
 }) {
   const apiKey = params.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY belum diatur di environment Cloudflare Pages.');
@@ -133,6 +134,13 @@ async function generateContent(params: {
     generationConfig: {
       temperature: params.structured ? 0.1 : 0.4,
       maxOutputTokens: params.maxOutputTokens ?? (params.structured ? 7000 : 2200),
+      ...(params.thinkingLevel
+        ? {
+            thinkingConfig: {
+              thinkingLevel: params.thinkingLevel,
+            },
+          }
+        : {}),
     },
   };
 
@@ -362,6 +370,7 @@ export async function onRequestPost(context: any) {
 
     let prompt = '';
     let maxOutputTokens = 1800;
+    let thinkingLevel: 'minimal' | 'low' | 'medium' | 'high' | undefined;
 
     if (action === 'explore') {
       const result = await exploreIssue(context, payload || {});
@@ -404,17 +413,23 @@ ATURAN
 5. Jika bukti hanya mendukung klaim yang lebih sempit, jelaskan batas klaim tersebut.
 6. Pastikan review benar-benar relevan dengan mosi terpilih.
 
-Tulis tepat 4 bagian dengan kalimat sangat ringkas:
+Tulis tepat 4 bagian dengan kalimat sangat ringkas.
 1. Relevansi bukti — 1 kalimat.
 2. Hubungan klaim dan alasan — 1 kalimat.
 3. Catatan penting — 1 kalimat.
 4. Kesimpulan dan satu perbaikan prioritas — 1 kalimat.
 
-Maksimal 150 kata.
+Maksimal 120 kata.
+Jangan mengulang Source Pack.
 Tanpa Markdown bold, heading #, atau fenced code. Gunakan teks biasa dan penomoran.
+Jangan melakukan penalaran panjang; langsung berikan hasil review.
 Pastikan respons selesai.
 `.trim();
-      maxOutputTokens = 900;
+      // Reviewer hanya membutuhkan respons pendek. Gemini 3.6 Flash
+      // memakai dynamic thinking secara default; level minimal mencegah
+      // budget output 900 habis untuk proses penalaran sebelum 4 kalimat selesai.
+      maxOutputTokens = 1200;
+      thinkingLevel = 'minimal';
     } else if (action === 'debate') {
       const issue = payload?.issue || {};
       prompt = `
@@ -492,7 +507,13 @@ Pastikan respons selesai.
       return json({ error: `Action tidak dikenal: ${action}` }, 400);
     }
 
-    const { text } = await generateContent({ env: context.env, prompt, structured: false, maxOutputTokens });
+    const { text } = await generateContent({
+      env: context.env,
+      prompt,
+      structured: false,
+      maxOutputTokens,
+      thinkingLevel,
+    });
     return json({ result: cleanText(text) }, 200);
   } catch (error: any) {
     console.error('API /api/gemini error:', error);

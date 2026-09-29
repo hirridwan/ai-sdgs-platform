@@ -1009,7 +1009,8 @@ export default function App() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'AI Reviewer gagal dijalankan.';
-      if (/terpotong|MAX_TOKENS|batas output/i.test(message)) {
+      const code = (error as ApiError)?.code || '';
+      if (/terpotong|MAX_TOKENS|batas output|INCOMPLETE/i.test(`${message} ${code}`)) {
         setReview(buildLocalReviewFallback());
       } else {
         setReview(`AI Reviewer gagal: ${message}`);
