@@ -23,7 +23,7 @@
   }
 ],
 
-  "vars": {
-    "GEMINI_API_KEY": ""
+  "secrets": {
+    "required": ["GEMINI_API_KEY"]
   }
 }

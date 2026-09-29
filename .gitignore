@@ -35,4 +35,4 @@ cookies*.txt
 test-results/
 /jalankan-ngrok.cmd
 /tests/
-/jalankan-tes-tim.cmd
+/jalankan-tes-tim.cmd.dev.vars* 
