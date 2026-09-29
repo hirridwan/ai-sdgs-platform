@@ -1019,6 +1019,10 @@ export default function App() {
                 <div className="mt-3 pt-3 border-t border-[#E6E7EF]/70">
                   <div className="font-mono text-[10px] text-[#B97819] uppercase tracking-wider mb-1">Mosi</div>
                   <p className="text-[12px] text-[#1D2030] m-0 leading-relaxed">{issue.motion}</p>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <span className="text-[11px] font-medium text-[#70758B]">{issue.sources.length} sumber dalam Source Pack</span>
+                    <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#0F766E]">Evidence-first</span>
+                  </div>
                 </div>
               </button>
             ))}
@@ -1043,12 +1047,89 @@ export default function App() {
         <div className="animate-[rise_0.25s_ease]">
           <p className="font-mono text-xs tracking-wider text-[#0F766E] uppercase mb-2.5">02 — AI Exploration</p>
           <h1 className="font-display font-semibold text-[clamp(28px,4vw,42px)] leading-[1.1] mb-4">Eksplorasi isu</h1>
-          <p className="text-[#70758B] text-base leading-relaxed max-w-[68ch] mb-8">Isu: <strong>{selectedIssue?.title || '(belum dipilih)'}</strong><br />Mosi: <strong>{selectedIssue?.motion || '(belum ditentukan)'}</strong><br />Posisi: <strong>{debatePosition || '(belum ditentukan)'}</strong></p>
-          <div className="bg-white/90 border border-[#E6E7EF] border-l-[3px] border-l-teal rounded-r-[14px] p-4 mb-6">
+          <p className="text-[#70758B] text-base leading-relaxed max-w-[68ch] mb-6">
+            Isu: <strong>{selectedIssue?.title || '(belum dipilih)'}</strong><br />
+            Mosi: <strong>{selectedIssue?.motion || '(belum ditentukan)'}</strong><br />
+            Posisi: <strong>{debatePosition || '(belum ditentukan)'}</strong>
+          </p>
+
+          {selectedIssue && (
+            <section className="bg-white/90 border border-[#E6E7EF] rounded-[22px] p-5 mb-6 shadow-[0_12px_30px_rgba(30,32,48,0.05)]">
+              <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+                <div>
+                  <div className="font-mono text-[10px] text-[#0F766E] uppercase tracking-[0.16em] mb-1.5">Source Pack · Bukti Terkurasi</div>
+                  <h2 className="font-display text-lg font-semibold text-[#1D2030]">Mulai dari sumber, bukan dari kesimpulan.</h2>
+                  <p className="text-sm text-[#70758B] leading-relaxed mt-1.5 max-w-[70ch]">
+                    Gunakan sumber berikut untuk memahami konteks, mencari bukti yang relevan, dan membangun klaim. Pada V1, Source Pack adalah basis evidence sebelum fact check.
+                  </p>
+                </div>
+                <span className="rounded-full bg-[#EFF9F7] px-3 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-[#0F766E]">
+                  {selectedIssue.sources.length} sumber
+                </span>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                {selectedIssue.sources.map((source, index) => (
+                  <a
+                    key={`${selectedIssue.id}-source-${index}-${source.url}`}
+                    href={source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group block rounded-[18px] border border-[#E6E7EF] bg-[#F9FAFC] p-4 transition-all hover:-translate-y-0.5 hover:border-[#0F766E]/50 hover:bg-white"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#0F766E]">
+                        {qualityLabel[source.quality]}
+                      </span>
+                      <span className="font-mono text-[9px] uppercase tracking-[0.10em] text-[#8A8EA2]">
+                        {source.year || '—'}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 font-display text-sm font-semibold leading-5 text-[#1D2030] group-hover:text-[#0F766E]">
+                      {source.title}
+                    </div>
+
+                    <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.10em] text-[#8A8EA2]">
+                      {source.domain}{source.scope ? ` · ${source.scope}` : ''}
+                    </div>
+
+                    {source.summary && (
+                      <p className="mt-2 text-xs leading-5 text-[#70758B]">
+                        {source.summary}
+                      </p>
+                    )}
+
+                    <div className="mt-3 text-[11px] font-semibold text-[#0F766E]">
+                      Buka sumber ↗
+                    </div>
+                  </a>
+                ))}
+              </div>
+
+              <div className="mt-4 rounded-[16px] border border-[#E6E7EF] bg-[#FAFAFC] px-4 py-3">
+                <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#8A8EA2]">Cara menggunakan Source Pack</div>
+                <p className="mt-1.5 text-xs leading-5 text-[#70758B]">
+                  Baca ringkasan → buka sumber yang paling relevan → catat temuan yang mendukung atau menantang posisi → gunakan temuan tersebut saat menulis eksplorasi.
+                </p>
+              </div>
+            </section>
+          )}
+
+          <div className="bg-white/90 border border-[#E6E7EF] border-l-[3px] border-l-[#0F766E] rounded-r-[16px] p-4 mb-6">
             <div className="font-mono text-[11px] text-[#0F766E] uppercase mb-1.5">AI · Explorer</div>
-            <p className="m-0 text-sm leading-relaxed text-[#1D2030] whitespace-pre-line">{explorerLoading ? 'AI sedang menyiapkan eksplorasi...' : explorerReply}</p>
+            <p className="m-0 text-sm leading-relaxed text-[#1D2030] whitespace-pre-line">
+              {explorerLoading ? 'AI sedang menyiapkan eksplorasi...' : explorerReply}
+            </p>
           </div>
-          <InputField label="Catatan eksplorasimu" isTextarea value={exploration} onChange={(event) => setExploration(event.target.value)} placeholder="Tuliskan apa yang kamu pahami dan apa yang ingin kamu buktikan. Jangan sekadar menyalin jawaban AI." />
+
+          <InputField
+            label="Catatan eksplorasimu"
+            isTextarea
+            value={exploration}
+            onChange={(event) => setExploration(event.target.value)}
+            placeholder="Tuliskan pemahamanmu berdasarkan Source Pack. Catat bukti yang paling relevan dan apa yang masih ingin kamu buktikan."
+          />
           <div className="flex gap-3 flex-wrap mt-7">
             <Btn secondary onClick={() => goTo(1)}>← Kembali</Btn>
             <Btn onClick={() => goTo(3)} disabled={!exploration.trim()}>Lanjut ke Fact Check →</Btn>
@@ -1128,7 +1209,7 @@ export default function App() {
                             <div className="font-mono text-[10px] text-[#70758B] uppercase">{qualityLabel[source.quality]} · {source.domain}{source.year ? ` · ${source.year}` : ''}{source.scope ? ` · ${source.scope}` : ''}</div>
                             <div className="text-sm text-[#1D2030] mt-1">{source.title}</div>
                             {source.summary && <div className="text-xs text-[#70758B] mt-1 leading-relaxed">{source.summary}</div>}
-                            <div className="text-[11px] text-[#0F766E] break-all mt-1">{source.url}</div>
+                            <div className="text-[11px] text-[#0F766E] mt-2 font-semibold">Buka sumber ↗</div>
                           </a>
                         ))}
                       </div>
@@ -1182,7 +1263,7 @@ export default function App() {
 
           <InputField label="Klaim" value={argument.claim} onChange={(event) => setArgument({ ...argument, claim: event.target.value })} placeholder="Apa yang kamu nyatakan?" />
           <InputField label="Alasan" value={argument.reason} onChange={(event) => setArgument({ ...argument, reason: event.target.value })} placeholder="Mengapa klaim itu penting/masuk akal?" />
-          <InputField label="Bukti" isTextarea value={argument.evidence} onChange={(event) => setArgument({ ...argument, evidence: event.target.value })} placeholder="Masukkan temuan spesifik dari sumber, lalu sertakan URL sumber." />
+          <InputField label="Bukti" isTextarea value={argument.evidence} onChange={(event) => setArgument({ ...argument, evidence: event.target.value })} placeholder="Masukkan temuan spesifik dari Source Pack yang mendukung klaimmu. Pilih bukti yang paling relevan, bukan sekadar menyalin ringkasan sumber." />
 
           <div className="flex gap-3 flex-wrap mt-7 mb-4"><Btn secondary onClick={getReview} disabled={!canReviewArgument || reviewLoading}>{reviewLoading ? 'Mereview...' : 'Minta review AI'}</Btn></div>
 
@@ -1336,7 +1417,7 @@ export default function App() {
               <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#0F766E]">Source Pack</span>
               <span className="h-2 w-2 rounded-full bg-[#0F766E] shadow-[0_0_0_4px_rgba(15,118,110,0.10)]" />
             </div>
-            <p className="mt-2 text-[11px] leading-5 text-[#73778D]">Gunakan paket sumber terkurasi untuk eksplorasi, fact-check, dan penyusunan argumen.</p>
+            <p className="mt-2 text-[11px] leading-5 text-[#73778D]">Gunakan paket sumber terkurasi sebagai basis evidence untuk eksplorasi, fact-check, dan penyusunan argumen.</p>
           </div>
 
           <div className="hidden border-t border-[#E6E7EF] pt-4 max-md:flex max-md:flex-1 max-md:gap-1 max-md:overflow-x-auto max-md:border-t-0 max-md:pt-0">
@@ -1409,7 +1490,7 @@ export default function App() {
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <div className="hidden rounded-full border border-[#E6E7EF] bg-[#FAFAFC] px-3 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-[#777B90] sm:block">Source Pack</div>
+              <div className="hidden rounded-full border border-[#E6E7EF] bg-[#FAFAFC] px-3 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-[#777B90] sm:block">Curated Evidence</div>
               <div className="rounded-full bg-[#0F766E] px-3.5 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-white shadow-[0_6px_14px_rgba(15,118,110,0.18)]">Tahap {String(currentStage).padStart(2,'0')}</div>
             </div>
           </header>
