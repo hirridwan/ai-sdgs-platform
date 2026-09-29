@@ -95,368 +95,140 @@ const ARGUMENT_REVIEW_MODE: 'api' | 'dummy' = 'api';
 
 const SOLUTION_EVALUATOR_MODE: 'api' | 'dummy' = 'api';
 
-const SAMPLE_ISSUES: Issue[] = [
-  {
-    id: 1,
-    sdg: 'SDG 8',
-    title: 'Dampak Perkembangan AI terhadap Lapangan Kerja',
-    blurb: 'AI dapat mengubah jenis pekerjaan, tugas, kebutuhan keterampilan, dan pola penciptaan lapangan kerja.',
-    motion: 'Perkembangan AI akan menciptakan lebih banyak lapangan pekerjaan daripada menghilangkannya.',
-    context: 'Perkembangan AI generatif dan otomatisasi dapat mengubah tugas dalam banyak pekerjaan. Perdebatan perlu membedakan pekerjaan yang benar-benar hilang, pekerjaan yang berubah, serta pekerjaan baru yang muncul. Dampaknya juga dapat berbeda menurut sektor, kelompok pekerja, keterampilan, dan negara.',
-    proFocus: 'Telusuri bukti tentang penciptaan pekerjaan baru, peningkatan produktivitas, munculnya permintaan baru, serta transformasi pekerjaan daripada penghapusan total pekerjaan.',
-    contraFocus: 'Telusuri bukti tentang otomatisasi dan job displacement, apakah pekerjaan baru cukup menggantikan pekerjaan yang hilang, serta risiko ketimpangan dan kebutuhan reskilling.',
-    starterQuestions: [
-      'Apa yang dimaksud dengan pekerjaan “tercipta” dan “hilang”?',
-      'Apakah AI lebih banyak menggantikan pekerjaan atau hanya sebagian tugas dalam pekerjaan?',
-      'Bagaimana dampaknya berbeda menurut sektor dan kelompok pekerja?',
-      'Apakah keterampilan baru dan reskilling cukup untuk mengurangi dampak displacement?',
-    ],
-    sources: [
-      {
-        title: 'ILO — Generative AI and jobs: A 2025 update',
-        url: 'https://www.ilo.org/publications/generative-ai-and-jobs-2025-update',
-        domain: 'ilo.org',
-        quality: 'tinggi',
-        year: '2025',
-        scope: 'Global',
-        summary: 'Sekitar 1 dari 4 pekerja global berada dalam pekerjaan yang memiliki paparan terhadap GenAI; ILO menekankan bahwa sebagian besar pekerjaan kemungkinan lebih banyak berubah daripada sepenuhnya menjadi redundant.',
-      },
-      {
-        title: 'WEF — Future of Jobs Report 2025',
-        url: 'https://www.weforum.org/publications/the-future-of-jobs-report-2025/in-full/2-jobs-outlook/',
-        domain: 'weforum.org',
-        quality: 'tinggi',
-        year: '2025',
-        scope: 'Global employer survey',
-        summary: 'Survei perusahaan memproyeksikan 170 juta pekerjaan tercipta dan 92 juta terdampak displacement hingga 2030; angka ini mencerminkan berbagai tren struktural, bukan AI saja.',
-      },
-      {
-        title: 'OECD — Using AI in the workplace',
-        url: 'https://www.oecd.org/en/publications/using-ai-in-the-workplace_73d417f9-en.html',
-        domain: 'oecd.org',
-        quality: 'tinggi',
-        year: '2024',
-        scope: 'OECD countries',
-        summary: 'Dalam survei OECD, sekitar 4 dari 5 pekerja yang menggunakan AI mengatakan AI meningkatkan performa; pada saat yang sama sekitar 27% pekerjaan di negara OECD berada pada risiko otomatisasi tertinggi.',
-      },
-    ],
-  },
-  {
-    id: 2,
-    sdg: 'SDG 12 & SDG 13',
-    title: 'Manfaat Pengembangan AI dan Dampak Lingkungannya',
-    blurb: 'AI membutuhkan listrik, air, perangkat keras, dan material, tetapi juga dapat digunakan untuk efisiensi energi dan lingkungan.',
-    motion: 'Manfaat pengembangan AI lebih besar daripada dampaknya terhadap lingkungan.',
-    context: 'Pengembangan dan penggunaan AI bergantung pada pusat data, listrik, sistem pendingin, perangkat keras, dan rantai pasok material. Di sisi lain, AI dapat digunakan untuk optimasi energi, pemantauan emisi, dan aplikasi lingkungan. Perbandingan perlu melihat seluruh siklus hidup dan konteks penggunaan, bukan satu dampak saja.',
-    proFocus: 'Bandingkan manfaat lingkungan yang terukur dari aplikasi AI dengan jejak lingkungannya, termasuk efisiensi energi, pengurangan emisi, pemantauan lingkungan, serta peningkatan efisiensi pusat data.',
-    contraFocus: 'Telusuri konsumsi listrik, air, material, limbah elektronik, serta keterbatasan dalam menggeneralisasi manfaat lingkungan AI ke semua use case.',
-    starterQuestions: [
-      'Bagaimana cara mengukur “manfaat” dan “dampak lingkungan” AI secara sebanding?',
-      'Apa saja dampak AI sepanjang siklus hidupnya?',
-      'Seberapa besar konsumsi listrik dan air pusat data?',
-      'Dalam kondisi apa AI benar-benar membantu mengurangi dampak lingkungan?',
-    ],
-    sources: [
-      {
-        title: 'IEA — Energy and AI',
-        url: 'https://www.iea.org/reports/energy-and-ai',
-        domain: 'iea.org',
-        quality: 'tinggi',
-        year: '2025',
-        scope: 'Global',
-        summary: 'IEA memproyeksikan konsumsi listrik pusat data sekitar 945 TWh pada 2030 dalam skenario dasar, lebih dari dua kali lipat 2024; AI menjadi salah satu pendorong penting kenaikan kebutuhan listrik.',
-      },
-      {
-        title: 'UNEP — Artificial Intelligence (AI) end-to-end',
-        url: 'https://www.unep.org/resources/report/artificial-intelligence-ai-end-end-environmental-impact-full-ai-lifecycle-needs-be',
-        domain: 'unep.org',
-        quality: 'tinggi',
-        year: '2024',
-        scope: 'Global',
-        summary: 'UNEP menekankan perlunya menilai dampak lingkungan sepanjang siklus hidup AI, termasuk penggunaan sumber daya dan dampak infrastruktur digital.',
-      },
-      {
-        title: 'UNEP — How to make AI data centres more sustainable',
-        url: 'https://www.unep.org/technical-highlight/how-make-ai-data-centres-more-sustainable',
-        domain: 'unep.org',
-        quality: 'tinggi',
-        year: '2026',
-        scope: 'Global',
-        summary: 'Pusat data meningkatkan kebutuhan listrik dan dapat memengaruhi penggunaan air bergantung pada desain, teknologi pendinginan, dan lokasi; AI juga dapat membantu efisiensi energi dan pemantauan emisi.',
-      },
-    ],
-  },
-  {
-    id: 3,
-    sdg: 'SDG 4',
-    title: 'Penggunaan AI dalam Pembelajaran',
-    blurb: 'AI dapat membantu belajar, tetapi juga membawa risiko kesalahan, bias, privasi, dan ketergantungan.',
-    motion: 'Penggunaan AI dalam pembelajaran lebih banyak merugikan dibandingkan menguntungkan siswa.',
-    context: 'AI generatif semakin digunakan untuk mencari informasi, membuat ringkasan, mendapatkan umpan balik, dan membantu mengerjakan tugas. Dampaknya tidak otomatis sama untuk semua kegiatan belajar. Manfaat seperti personalisasi dan aksesibilitas perlu ditimbang dengan risiko kesalahan, bias, privasi, dan ketergantungan.',
-    proFocus: 'Telusuri bukti tentang personalisasi, aksesibilitas, umpan balik, dan efisiensi belajar; perhatikan kondisi penggunaan yang membuat AI menjadi alat pendukung, bukan pengganti proses berpikir siswa.',
-    contraFocus: 'Telusuri kesalahan dan bias AI, privasi, ketergantungan, serta potensi dampak pada berpikir kritis, problem solving, dan kemandirian belajar ketika AI digunakan tanpa pengawasan.',
-    starterQuestions: [
-      'Manfaat belajar apa yang benar-benar dapat diukur dari penggunaan AI?',
-      'Risiko apa yang paling relevan untuk siswa dan pada tugas seperti apa?',
-      'Bagaimana penggunaan AI memengaruhi kemandirian dan berpikir kritis?',
-      'Apa peran guru dan aturan sekolah dalam membatasi risikonya?',
-    ],
-    sources: [
-      {
-        title: 'UNESCO — Guidance for generative AI in education and research',
-        url: 'https://www.unesco.org/en/articles/guidance-generative-ai-education-and-research',
-        domain: 'unesco.org',
-        quality: 'tinggi',
-        year: '2023/2026 update',
-        scope: 'Global',
-        summary: 'UNESCO membahas penggunaan kreatif AI dalam pendidikan sekaligus kebutuhan perlindungan privasi, validasi etis, keamanan, dan pendekatan yang berpusat pada manusia.',
-      },
-      {
-        title: 'UNICEF — Generative AI: Risks and opportunities for children',
-        url: 'https://www.unicef.org/innocenti/generative-ai-risks-and-opportunities-children',
-        domain: 'unicef.org',
-        quality: 'tinggi',
-        year: '2025',
-        scope: 'Global',
-        summary: 'UNICEF mengidentifikasi peluang seperti personalisasi dan aksesibilitas sekaligus risiko seperti kesalahan, disinformasi persuasif, privasi, serta kemungkinan ketergantungan pada AI.',
-      },
-      {
-        title: 'OECD — PISA 2025 Results, Indonesia Country Note',
-        url: 'https://www.oecd.org/en/publications/pisa-2025-results-volume-i-country-notes_2d4ff9ea-en/indonesia_9c880f8a-en.html',
-        domain: 'oecd.org',
-        quality: 'tinggi',
-        year: '2025',
-        scope: 'Indonesia',
-        summary: 'Sebanyak 53% siswa di Indonesia melaporkan menggunakan chatbot setiap minggu untuk belajar; penggunaan juga dilaporkan untuk riset awal, membuat ringkasan, dan penyusunan draf.',
-      },
-    ],
-  },
-  {
-    id: 4,
-    sdg: 'SDG 16',
-    title: 'Penyebaran Informasi Palsu: AI-generated vs Human-generated',
-    blurb: 'Konten sintetis dapat dibuat cepat dan dalam skala besar, tetapi dampak informasi palsu juga bergantung pada manusia dan konteks distribusinya.',
-    motion: 'Penyebaran informasi yang dibuat AI lebih berbahaya bagi masyarakat daripada informasi palsu yang dibuat manusia.',
-    context: 'Generative AI mempermudah pembuatan teks, gambar, audio, dan video sintetis. Tantangan utamanya mencakup skala, kecepatan, kredibilitas, kemampuan deteksi, dan dampak pada kepercayaan publik. Perbandingan dengan informasi palsu buatan manusia juga perlu mempertimbangkan niat dan ekosistem penyebarannya.',
-    proFocus: 'Telusuri apakah AI meningkatkan skala, kecepatan, realisme, dan kemampuan otomatisasi kampanye informasi palsu sehingga dampaknya dapat meluas.',
-    contraFocus: 'Bandingkan dengan informasi palsu buatan manusia, termasuk faktor niat, konteks sosial, saluran distribusi, dan kemungkinan AI hanya menjadi alat penguat.',
-    starterQuestions: [
-      'Apa arti “lebih berbahaya” dalam mosi ini: skala, kecepatan, kredibilitas, atau dampak sosial?',
-      'Seberapa mudah masyarakat membedakan konten AI dan manusia?',
-      'Apakah AI merupakan sumber utama atau amplifier dari masalah misinformasi?',
-      'Bagaimana literasi digital, label, dan moderasi memengaruhi risiko?',
-    ],
-    sources: [
-      {
-        title: 'WEF — Global Risks Report 2025',
-        url: 'https://www.weforum.org/publications/global-risks-report-2025/in-full/global-risks-2025-a-world-of-growing-divisions-c943fe3ba0/',
-        domain: 'weforum.org',
-        quality: 'tinggi',
-        year: '2025',
-        scope: 'Global',
-        summary: 'WEF menyoroti makin sulitnya membedakan informasi menyesatkan yang dibuat AI dan manusia serta rendahnya hambatan untuk membuat dan mendistribusikan kampanye berskala besar dengan GenAI.',
-      },
-      {
-        title: 'OECD — The OECD Truth Quest Survey',
-        url: 'https://www.oecd.org/en/publications/the-oecd-truth-quest-survey_92a94c0f-en.html',
-        domain: 'oecd.org',
-        quality: 'tinggi',
-        year: '2024',
-        scope: '21 countries; 40,765 respondents',
-        summary: 'Survei OECD menguji kemampuan membedakan konten benar dan palsu/menyesatkan, termasuk isu deteksi konten AI dan pengaruh label terhadap penilaian pengguna.',
-      },
-      {
-        title: 'UNICEF — Generative AI: Risks and opportunities for children',
-        url: 'https://www.unicef.org/innocenti/generative-ai-risks-and-opportunities-children',
-        domain: 'unicef.org',
-        quality: 'tinggi',
-        year: '2025',
-        scope: 'Global',
-        summary: 'UNICEF mencatat GenAI dapat menghasilkan informasi palsu dengan cepat dan meyakinkan serta menambah tantangan moderasi; risiko juga muncul dari ekosistem aktor manusia yang memanfaatkan teknologi.',
-      },
-    ],
-  },
-  {
-    id: 5,
-    sdg: 'SDG 9 & SDG 16',
-    title: 'Pengawasan Penggunaan Media Sosial',
-    blurb: 'Media sosial memberi manfaat sosial dan ekonomi, tetapi juga menimbulkan risiko keselamatan, privasi, dan penyalahgunaan.',
-    motion: 'Penggunaan sosial media dalam kehidupan manusia perlu diawasi secara ketat oleh pemerintah.',
-    context: 'Media sosial digunakan untuk komunikasi, informasi, pendidikan, dan kegiatan ekonomi, tetapi juga berkaitan dengan cyberbullying, penipuan, pelanggaran privasi, serta risiko terhadap anak. “Diawasi secara ketat” perlu didefinisikan karena kebijakan dapat memengaruhi kebebasan berekspresi, privasi, dan pembagian tanggung jawab antara pemerintah, platform, keluarga, dan sekolah.',
-    proFocus: 'Telusuri risiko yang membutuhkan perlindungan publik, efektivitas regulasi dan safety-by-design, serta perlindungan anak dan kelompok rentan.',
-    contraFocus: 'Telusuri risiko overregulation terhadap privasi dan kebebasan berekspresi, serta argumen bahwa pengawasan harus berbasis risiko dan dibagi dengan platform, keluarga, dan sekolah.',
-    starterQuestions: [
-      'Apa yang dimaksud dengan “diawasi secara ketat”?',
-      'Risiko apa yang memang membutuhkan intervensi pemerintah?',
-      'Bagaimana batas antara perlindungan pengguna dan kebebasan berekspresi?',
-      'Siapa yang paling bertanggung jawab: pemerintah, platform, keluarga, atau sekolah?',
-    ],
-    sources: [
-      {
-        title: 'UNICEF Indonesia — Online knowledge and practice of children in Indonesia: A baseline study 2023',
-        url: 'https://www.unicef.org/indonesia/child-protection/reports/online-knowledge-and-practice-children-indonesia-baseline-study-2023',
-        domain: 'unicef.org',
-        quality: 'tinggi',
-        year: '2025',
-        scope: 'Indonesia',
-        summary: 'Studi UNICEF Indonesia melaporkan tingginya penggunaan internet harian anak, sementara 37.5% menerima informasi keselamatan daring; 42% pernah merasa tidak nyaman atau takut akibat pengalaman online, dan 50.3% melihat gambar seksual di media sosial.',
-      },
-      {
-        title: 'OECD — Towards digital safety by design for children',
-        url: 'https://www.oecd.org/en/publications/towards-digital-safety-by-design-for-children_c167b650-en.html',
-        domain: 'oecd.org',
-        quality: 'tinggi',
-        year: '2024',
-        scope: 'International',
-        summary: 'OECD membahas safety-by-design, mekanisme keselamatan, pengaduan, dan pendekatan yang sesuai usia sebagai bagian dari perlindungan anak di lingkungan digital.',
-      },
-      {
-        title: 'UNICEF Indonesia — JagaBareng',
-        url: 'https://www.unicef.org/indonesia/id/perlindungan-anak/jagabareng',
-        domain: 'unicef.org',
-        quality: 'tinggi',
-        year: '2024',
-        scope: 'Indonesia',
-        summary: 'Materi UNICEF Indonesia mendorong pendampingan orang tua, batas penggunaan, layanan sesuai usia, kontrol orang tua, dan komunikasi sebagai bagian dari keselamatan anak di ruang digital.',
-      },
-    ],
-  },
-  {
-    id: 6,
-    sdg: 'SDG 13',
-    title: 'Mobil Listrik dan Masa Depan Transportasi',
-    blurb: 'Kendaraan listrik tidak memiliki emisi knalpot, tetapi dampak siklus hidupnya bergantung pada listrik, baterai, penggunaan, dan daur ulang.',
-    motion: 'Mobil listrik merupakan pilihan yang lebih tepat daripada mobil bensin untuk masa depan transportasi.',
-    context: 'Kendaraan listrik dapat mengurangi emisi dari penggunaan kendaraan karena tidak menghasilkan emisi knalpot. Namun, perbandingan dengan kendaraan bensin tetap perlu melihat siklus hidup, sumber listrik, produksi baterai, jarak tempuh, infrastruktur pengisian, biaya, dan akhir masa pakai baterai. Dampaknya dapat berbeda antar wilayah.',
-    proFocus: 'Telusuri perbandingan emisi siklus hidup, pengurangan ketergantungan bahan bakar fosil, biaya operasional, dan perkembangan infrastruktur pengisian.',
-    contraFocus: 'Telusuri batasan produksi baterai, campuran listrik, harga, infrastruktur, variasi regional, serta alternatif seperti transportasi publik, kendaraan kecil, atau hibrida.',
-    starterQuestions: [
-      'Bagaimana perbandingan emisi sepanjang siklus hidup EV dan mobil bensin?',
-      'Seberapa besar sumber listrik memengaruhi hasil perbandingan?',
-      'Bagaimana produksi dan daur ulang baterai diperhitungkan?',
-      'Apakah EV cocok secara sama di semua daerah dan kondisi transportasi?',
-    ],
-    sources: [
-      {
-        title: 'IEA — Global EV Outlook 2026',
-        url: 'https://www.iea.org/reports/global-ev-outlook-2026',
-        domain: 'iea.org',
-        quality: 'tinggi',
-        year: '2026',
-        scope: 'Global',
-        summary: 'IEA melaporkan penjualan mobil listrik global melampaui 20 juta unit pada 2025, sekitar seperempat penjualan mobil baru, dengan implikasi terhadap listrik, minyak, dan emisi.',
-      },
-      {
-        title: 'IEA — Global EV Outlook 2026: Outlook for electric mobility',
-        url: 'https://www.iea.org/reports/global-ev-outlook-2026/outlook-for-electric-mobility-chap-9-11',
-        domain: 'iea.org',
-        quality: 'tinggi',
-        year: '2026',
-        scope: 'Global modelling',
-        summary: 'Model IEA memperkirakan stok EV pada 2025 telah menghindari sekitar 190 Mt CO2-eq secara bersih; skenario kebijakan saat ini menunjukkan lebih dari 1.2 Gt pada 2035.',
-      },
-      {
-        title: 'IEA — Global EV Outlook 2024: Outlook for emissions reductions',
-        url: 'https://www.iea.org/reports/global-ev-outlook-2024/outlook-for-emissions-reductions',
-        domain: 'iea.org',
-        quality: 'tinggi',
-        year: '2024',
-        scope: 'Global',
-        summary: 'IEA memperkirakan mobil listrik baterai ukuran menengah yang dijual pada 2023 menghasilkan emisi siklus hidup global sekitar setengah kendaraan ICE yang ekuivalen dalam skenario yang dianalisis.',
-      },
-    ],
-  },
-  {
-    id: 7,
-    sdg: 'SDG 2',
-    title: 'Bantuan Sembako dan Bantuan Tunai',
-    blurb: 'Bantuan pangan menyediakan komoditas secara langsung, sementara bantuan tunai memberi pilihan penggunaan; hasilnya bergantung pada konteks.',
-    motion: 'Bantuan sembako lebih menjamin kebutuhan gizi dibandingkan bantuan tunai.',
-    context: 'Bantuan sosial dapat diberikan dalam bentuk pangan, tunai, voucher, atau kombinasi. Sembako secara langsung menyediakan jenis pangan tertentu, sedangkan bantuan tunai memberi fleksibilitas memilih kebutuhan rumah tangga. Efek terhadap gizi dan ketahanan pangan bergantung pada harga, ketersediaan pasar, kebutuhan rumah tangga, desain program, dan tujuan intervensi.',
-    proFocus: 'Telusuri kondisi ketika bantuan pangan lebih mampu memastikan konsumsi pangan tertentu, terutama saat pasar atau akses pangan terbatas, serta bukti terkait kualitas konsumsi dan ketahanan pangan.',
-    contraFocus: 'Bandingkan fleksibilitas bantuan tunai, perubahan konsumsi dan ketahanan pangan, serta kondisi pasar dan variasi kebutuhan rumah tangga.',
-    starterQuestions: [
-      'Apa indikator yang dipakai untuk mendefinisikan kebutuhan gizi terpenuhi?',
-      'Dalam kondisi apa pangan langsung lebih efektif daripada uang tunai?',
-      'Bagaimana harga dan ketersediaan pasar memengaruhi hasil?',
-      'Apakah rumah tangga memiliki kebutuhan yang sama?',
-    ],
-    sources: [
-      {
-        title: 'WFP — Food assistance: cash and in-kind',
-        url: 'https://www.wfp.org/food-assistance',
-        domain: 'wfp.org',
-        quality: 'tinggi',
-        year: '2026',
-        scope: 'Global',
-        summary: 'WFP menjelaskan bahwa bantuan pangan dapat diberikan dalam bentuk pangan langsung, uang tunai, atau voucher; bantuan tunai memberi pilihan dan fleksibilitas, sementara bentuk bantuan dipilih sesuai konteks.',
-      },
-      {
-        title: 'WFP — Cash and In-Kind Transfers in Humanitarian Settings: A Review of Evidence and Knowledge Gaps',
-        url: 'https://www.wfp.org/publications/cash-and-kind-transfers-humanitarian-settings-review-evidence-and-knowledge-gaps',
-        domain: 'wfp.org',
-        quality: 'tinggi',
-        year: '2022',
-        scope: 'Humanitarian settings / LMIC evidence',
-        summary: 'Tinjauan sistematis membandingkan bantuan tunai dan in-kind terhadap kebutuhan dasar dan hasil pembangunan, dengan penekanan bahwa efektivitas sangat bergantung pada konteks program.',
-      },
-      {
-        title: 'World Bank — What have we learned about cash transfers?',
-        url: 'https://blogs.worldbank.org/en/impactevaluations/what-have-we-learned-about-cash-transfers',
-        domain: 'worldbank.org',
-        quality: 'tinggi',
-        year: '2021',
-        scope: 'International evidence summary',
-        summary: 'Ringkasan bukti World Bank menunjukkan transfer tunai dapat meningkatkan pemanfaatan layanan kesehatan dan gizi, sementara dampak akhir terhadap status gizi bervariasi menurut desain dan konteks.',
-      },
-    ],
-  },
-  {
-    id: 8,
-    sdg: 'SDG 3',
-    title: 'Pembatasan Penggunaan HP pada Remaja',
-    blurb: 'HP dapat membantu komunikasi dan belajar, tetapi penggunaan bermasalah dapat berkaitan dengan tidur, aktivitas fisik, dan kesejahteraan.',
-    motion: 'Pembatasan penggunaan HP pada remaja diperlukan untuk kualitas hidup dan kesehatan.',
-    context: 'Ponsel digunakan remaja untuk komunikasi, belajar, hiburan, dan media sosial. Penggunaan berlebihan atau bermasalah dapat berkaitan dengan tidur, aktivitas fisik, dan kesejahteraan, tetapi hubungan tersebut kompleks dan dipengaruhi oleh jenis aktivitas serta konteks. Karena itu, “pembatasan” perlu dibedakan dari sekadar menghitung durasi layar.',
-    proFocus: 'Telusuri hubungan penggunaan bermasalah dengan tidur, aktivitas fisik, kesejahteraan, serta bentuk batas penggunaan yang realistis dan tidak menghilangkan manfaat komunikasi atau belajar.',
-    contraFocus: 'Telusuri bukti yang menunjukkan dampak screen time berbeda menurut aktivitas dan konteks, serta manfaat penggunaan HP untuk belajar, komunikasi, dan dukungan sosial.',
-    starterQuestions: [
-      'Apa arti “pembatasan” dalam mosi ini: durasi, jenis aplikasi, waktu tertentu, atau aturan tertentu?',
-      'Apakah durasi layar saja cukup untuk mengukur dampak kesehatan?',
-      'Bagaimana membedakan penggunaan untuk belajar dengan hiburan?',
-      'Apakah aturan yang sama cocok untuk semua remaja?',
-    ],
-    sources: [
-      {
-        title: 'WHO Europe — Addressing the digital determinants of youth mental health and well-being',
-        url: 'https://www.who.int/europe/publications/i/item/WHO-EURO-2025-12187-51959-79685',
-        domain: 'who.int',
-        quality: 'tinggi',
-        year: '2025',
-        scope: 'WHO European Region',
-        summary: 'WHO Europe menekankan bahwa bukti mengenai teknologi dan kesejahteraan mental remaja bersifat campuran, dengan kemungkinan efek positif dan negatif serta hubungan dua arah antara penggunaan digital dan kesejahteraan.',
-      },
-      {
-        title: 'WHO Europe — Teens, screens and mental health',
-        url: 'https://www.who.int/europe/news/item/25-09-2024-teens--screens-and-mental-health',
-        domain: 'who.int',
-        quality: 'tinggi',
-        year: '2024',
-        scope: '44 countries/areas; HBSC 2022',
-        summary: 'Analisis HBSC 2022 terhadap hampir 280 ribu remaja menunjukkan 11% melaporkan penggunaan media sosial yang bermasalah, naik dari 7% pada 2018.',
-      },
-      {
-        title: 'WHO — WHO guidelines on physical activity and sedentary behaviour',
-        url: 'https://www.who.int/publications/i/item/9789240015128',
-        domain: 'who.int',
-        quality: 'tinggi',
-        year: '2020',
-        scope: 'Global',
-        summary: 'Pedoman WHO memberikan rekomendasi berbasis bukti untuk aktivitas fisik dan perilaku sedentari pada anak dan remaja, relevan saat membahas keseimbangan antara waktu layar dan aktivitas.',
-      },
-    ],
-  },
-];
+type MotionApiRow = {
+  id: number;
+  text: string;
+  sdgNumber: number | null;
+  createdAt: string;
+  sdgs?: Array<{
+    number: number;
+    title: string;
+    description: string;
+    isPrimary: boolean;
+  }>;
+  context?: {
+    background?: string;
+    focusIssue?: string;
+    sdgContext?: string;
+    keyConsiderations?: string;
+    analysisFramework?: string;
+  } | null;
+  questions?: Array<{
+    id: number;
+    category: string;
+    question: string;
+    position: number;
+  }>;
+  arguments?: Array<{
+    id: number;
+    side: 'PRO' | 'KONTRA';
+    title: string;
+    explanation: string;
+    reasoning: string;
+    evidenceToFind: string;
+    position: number;
+  }>;
+  rebuttals?: Array<{
+    id: number;
+    argumentId: number;
+    side: 'PRO' | 'KONTRA';
+    counterargument: string;
+    rebuttal: string;
+    position: number;
+  }>;
+  sources?: Array<{
+    id: number;
+    organization: string;
+    title: string;
+    url: string | null;
+    description: string | null;
+    position: number;
+  }>;
+  keywords?: Array<{
+    id: number;
+    language: string;
+    keyword: string;
+    position: number;
+  }>;
+};
+
+const ISSUE_DISPLAY_TITLES: Record<number, string> = {
+  1: 'Dampak Perkembangan AI terhadap Lapangan Kerja',
+  2: 'Manfaat Pengembangan AI dan Dampak Lingkungannya',
+  3: 'Penggunaan AI dalam Pembelajaran',
+  4: 'Penyebaran Informasi Palsu: AI-generated vs Human-generated',
+  5: 'Pengawasan Penggunaan Media Sosial',
+  6: 'Mobil Listrik dan Masa Depan Transportasi',
+  7: 'Bantuan Sembako dan Bantuan Tunai',
+  8: 'Pembatasan Penggunaan HP pada Remaja',
+};
+
+const EMPTY_ISSUE: Issue = {
+  id: 0,
+  sdg: '',
+  title: 'Mosi',
+  blurb: '',
+  motion: '',
+  context: '',
+  proFocus: '',
+  contraFocus: '',
+  starterQuestions: [],
+  sources: [],
+};
+
+function getDomain(url: string | null): string {
+  if (!url) return '';
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
+function mapMotionToIssue(motion: MotionApiRow): Issue {
+  const sdgs = Array.isArray(motion.sdgs) ? motion.sdgs : [];
+  const questions = Array.isArray(motion.questions) ? motion.questions : [];
+  const argumentsList = Array.isArray(motion.arguments) ? motion.arguments : [];
+  const sources = Array.isArray(motion.sources) ? motion.sources : [];
+  const context = motion.context || null;
+
+  const proArguments = argumentsList.filter((item) => item.side === 'PRO');
+  const contraArguments = argumentsList.filter((item) => item.side === 'KONTRA');
+
+  const proFocus = proArguments.length
+    ? proArguments.map((item) => item.title).join('; ')
+    : context?.keyConsiderations || '';
+  const contraFocus = contraArguments.length
+    ? contraArguments.map((item) => item.title).join('; ')
+    : context?.keyConsiderations || '';
+
+  return {
+    id: motion.id,
+    sdg: sdgs.length
+      ? sdgs.map((item) => `SDG ${item.number}`).join(' & ')
+      : motion.sdgNumber
+        ? `SDG ${motion.sdgNumber}`
+        : 'SDG',
+    title: ISSUE_DISPLAY_TITLES[motion.id] || `Mosi #${motion.id}`,
+    blurb: context?.focusIssue || context?.keyConsiderations || motion.text,
+    motion: motion.text,
+    context: context?.background || '',
+    proFocus,
+    contraFocus,
+    starterQuestions: questions
+      .sort((a, b) => a.position - b.position)
+      .map((item) => item.question),
+    sources: sources
+      .sort((a, b) => a.position - b.position)
+      .map((source) => ({
+        title: source.title || source.organization,
+        url: source.url || '',
+        domain: getDomain(source.url),
+        quality: 'tinggi' as const,
+        summary: source.description || undefined,
+      })),
+  };
+}
 
 const verdictMeta: Record<ClaimResult['verdict'], { label: string; color: string }> = {
   verified: { label: 'Terverifikasi', color: 'bg-[#6C5CE7]/12 text-[#6C5CE7]' },
@@ -596,7 +368,7 @@ const MOCK_EVIDENCE_BY_ISSUE: Record<number, string[]> = {
 
 function mockEvidenceForClaim(issue: Issue | null, claim: string): string {
   const findings = MOCK_EVIDENCE_BY_ISSUE[issue?.id || 1] || [];
-  const sources = makeMockSourcePack(issue || SAMPLE_ISSUES[0]);
+  const sources = makeMockSourcePack(issue || EMPTY_ISSUE);
   const sourceText = sources.slice(0, 2).map((source, index) =>
     `${source.title}\nTemuan: ${findings[index] || 'Temuan simulasi yang relevan dengan klaim.'}\nSumber: ${source.url}`
   ).join('\n\n');
@@ -611,7 +383,7 @@ async function mockFactCheck(payload: { claim?: string; text?: string; issue?: I
   const requestedClaims = payload.claim
     ? [payload.claim.trim()]
     : profile.claims.slice(0, Math.min(Number(payload.maxClaims || 2), 2));
-  const sources = makeMockSourcePack(payload.issue || SAMPLE_ISSUES[0]);
+  const sources = makeMockSourcePack(payload.issue || EMPTY_ISSUE);
 
   return requestedClaims.map((claim, index) => ({
     id: `mock-${Date.now()}-${index}`,
@@ -654,6 +426,11 @@ function formatApiError(error: unknown): string {
 export default function App() {
   const [currentStage, setCurrentStage] = useState(0);
   const [furthestStage, setFurthestStage] = useState(0);
+  const PRIMARY_MOTION_IDS = new Set([1, 2, 3, 4]);
+
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [issuesLoading, setIssuesLoading] = useState(true);
+  const [issuesError, setIssuesError] = useState<string | null>(null);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [debatePosition, setDebatePosition] = useState<'PRO' | 'KONTRA' | ''>('');
 
@@ -714,6 +491,55 @@ export default function App() {
   const canProceedToImpact = Boolean(solution.trim() && evalReply.trim()) && !evalLoading;
 
   useEffect(() => {
+    let cancelled = false;
+
+    const loadIssues = async () => {
+      setIssuesLoading(true);
+      setIssuesError(null);
+
+      try {
+        const response = await fetch('/api/motions', {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data?.error || `Gagal memuat bank mosi (${response.status}).`);
+        }
+
+        if (!Array.isArray(data?.motions)) {
+          throw new Error('Respons /api/motions tidak memiliki daftar mosi.');
+        }
+
+        const mappedIssues = (data.motions as MotionApiRow[])
+          .map(mapMotionToIssue)
+          .filter((issue) => PRIMARY_MOTION_IDS.has(issue.id));
+
+        if (!cancelled) {
+          setIssues(mappedIssues);
+          setSelectedIssue((current) => {
+            if (!current) return null;
+            return mappedIssues.find((issue) => issue.id === current.id) || null;
+          });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setIssuesError(error instanceof Error ? error.message : 'Bank mosi gagal dimuat.');
+        }
+      } finally {
+        if (!cancelled) setIssuesLoading(false);
+      }
+    };
+
+    loadIssues();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!selectedIssue) return;
     setExploration('');
     setExplorerReply('');
@@ -771,7 +597,7 @@ export default function App() {
     const hasReason = arg.reason.trim().length >= 30;
     const claim = arg.claim.trim();
     const findings = MOCK_EVIDENCE_BY_ISSUE[issue?.id || 1] || [];
-    const sources = makeMockSourcePack(issue || SAMPLE_ISSUES[0]).slice(0, 2);
+    const sources = makeMockSourcePack(issue || EMPTY_ISSUE).slice(0, 2);
 
     if (claim && hasReason && hasUrl) {
       const evidenceLines = sources.map((source, index) =>
@@ -1008,9 +834,29 @@ export default function App() {
         <div className="animate-[rise_0.25s_ease]">
           <p className="font-mono text-xs tracking-wider text-[#6C5CE7] uppercase mb-2.5">01 — Issue Bank</p>
           <h1 className="font-display font-semibold text-[clamp(28px,4vw,42px)] leading-[1.08] tracking-[-0.02em] mb-4">Pilih satu isu SDGs</h1>
-          <p className="text-[#70758B] text-[15px] leading-7 max-w-[62ch] mb-8">Pilih satu dari 8 mosi pada Bank Mosi. Mosi yang dipilih menjadi konteks seluruh perjalanan.</p>
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-3">
-            {SAMPLE_ISSUES.map((issue) => (
+          <p className="text-[#70758B] text-[15px] leading-7 max-w-[62ch] mb-8">Pilih satu mosi dari Bank Mosi. Data mosi dan konteksnya dimuat langsung dari database.</p>
+
+          {issuesLoading && (
+            <div className="rounded-[18px] border border-[#E6E7EF] bg-white/80 p-4 text-sm text-[#70758B]">
+              Memuat bank mosi dari D1...
+            </div>
+          )}
+
+          {issuesError && (
+            <div className="rounded-[18px] border border-[#F0C9C9] bg-[#FFF7F7] p-4 text-sm text-[#A53E3E]">
+              Gagal memuat bank mosi: {issuesError}
+            </div>
+          )}
+
+          {!issuesLoading && !issuesError && issues.length === 0 && (
+            <div className="rounded-[18px] border border-[#E6E7EF] bg-white/80 p-4 text-sm text-[#70758B]">
+              Belum ada mosi yang tersedia.
+            </div>
+          )}
+
+          {!issuesLoading && !issuesError && issues.length > 0 && (
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-3">
+              {issues.map((issue) => (
               <button key={issue.id} type="button" onClick={() => setSelectedIssue(issue)} className={`text-left h-full flex flex-col bg-white/80 border rounded-[20px] p-4 cursor-pointer transition-all duration-200 hover:border-[#6C5CE7]/60 hover:bg-white ${selectedIssue?.id === issue.id ? 'border-[#6C5CE7] bg-[#6C5CE7]/6 shadow-[0_0_0_3px_rgba(45,212,191,0.07)]' : 'border-[#E6E7EF]'}`}>
                 <div className="font-mono text-[10px] uppercase tracking-wider text-[#6C5CE7]">{issue.sdg}</div>
                 <h3 className="font-display text-[15px] leading-6 my-1.5">{issue.title}</h3>
@@ -1020,8 +866,10 @@ export default function App() {
                   <p className="text-[12px] text-[#303246] m-0 leading-5">{issue.motion}</p>
                 </div>
               </button>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+
           <div className="mt-7">
             <div className="font-mono text-[11px] text-[#6C5CE7] uppercase tracking-wider mb-2">Posisi debat (sesuai hasil undian)</div>
             <div className="flex gap-3 flex-wrap">
