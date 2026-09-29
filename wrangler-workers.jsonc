@@ -2,7 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "ai-sdgs-platform",
   "main": "./worker/index.ts",
-  "compatibility_date": "2026-09-19",
+  "compatibility_date": "2026-09-18",
 
   "assets": {
     "directory": "./dist",
