@@ -453,8 +453,9 @@ Tanpa Markdown. Langsung ke inti.
     } else if (action === 'evaluateSolution') {
       const issue = payload?.issue || {};
       const sourcePack: SourcePackItem[] = Array.isArray(issue?.sources) ? issue.sources : [];
-      const sourceBlock = sourcePack.map((source, index) => (
-        `SUMBER ${index + 1}: ${source.title} | Tahun: ${source.year || '-'} | Cakupan: ${source.scope || '-'}\nRingkasan: ${source.summary || '-'}\nURL: ${source.url}`
+      const sourceBlock = sourcePack.slice(0, 4).map((source, index) => (
+        `SUMBER ${index + 1}: ${source.title} | Tahun: ${source.year || '-'} | Cakupan: ${source.scope || '-'}
+Ringkasan: ${source.summary || '-'}`
       )).join('\n');
 
       prompt = `
@@ -485,7 +486,7 @@ ATURAN EVALUASI
 5. Jika solusi masih terlalu umum, sebutkan bagian yang perlu dibuat lebih konkret.
 6. Bedakan kelayakan dari bukti efektivitas: solusi yang realistis belum tentu terbukti efektif.
 
-Tulis tepat 6 bagian:
+Tulis tepat 6 bagian dan buat setiap bagian hanya 1 kalimat:
 1. Kesesuaian masalah
 2. Kelayakan pelaksanaan
 3. Pihak yang terlibat
@@ -493,11 +494,14 @@ Tulis tepat 6 bagian:
 5. Risiko utama
 6. Kesimpulan dan satu perbaikan prioritas
 
-Setiap bagian 1-3 kalimat. Maksimal 360 kata.
-Tanpa Markdown bold, heading #, atau fenced code. Gunakan teks biasa dan penomoran.
+Maksimal 180 kata.
+Jangan mengulang Source Pack.
+Tanpa Markdown bold, heading #, atau fenced code.
+Jangan melakukan penalaran panjang; langsung berikan hasil evaluasi.
 Pastikan respons selesai.
 `.trim();
-      maxOutputTokens = 2200;
+      maxOutputTokens = 1000;
+      thinkingLevel = 'minimal';
     } else {
       return json({ error: `Action tidak dikenal: ${action}` }, 400);
     }

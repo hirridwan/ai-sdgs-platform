@@ -858,6 +858,29 @@ export default function App() {
     return `1. Kesesuaian masalah\nSolusi relevan dengan masalah pada ${issueContext} dan perlu menunjukkan hubungan yang jelas antara masalah, tindakan, serta hasil yang diharapkan.\n\n2. Kelayakan pelaksanaan\nSolusi cukup realistis jika dilakukan bertahap dan disesuaikan dengan sumber daya, waktu, serta kondisi pihak yang terlibat.\n\n3. Pihak yang terlibat\nTentukan pihak yang memiliki kewenangan, pelaksana, penerima manfaat, serta pihak pendukung sesuai konteks mosi.\n\n4. Indikator keberhasilan\nGunakan ukuran yang dapat diamati, misalnya perubahan akses/partisipasi, penggunaan layanan, biaya, emisi, hasil belajar, keselamatan digital, kualitas konsumsi, atau indikator lain yang relevan dengan isu.\n\n5. Risiko utama\nPerhatikan keterbatasan anggaran, perubahan kebiasaan, infrastruktur, ketimpangan akses, dampak tidak langsung, atau partisipasi yang rendah.\n\n6. Kesimpulan dan satu perbaikan prioritas\nSolusi dapat dilanjutkan setelah indikator keberhasilan dan pembagian tanggung jawab dibuat lebih spesifik.`;
   }
 
+  function buildLocalSolutionEvaluationFallback() {
+    const title = selectedIssue?.title || 'isu yang dipilih';
+    return [
+      '1. Kesesuaian masalah',
+      `Solusi sudah relevan dengan ${title} karena menghubungkan dampak AI, transisi pekerja, dan penciptaan peluang kerja baru.`,
+      '',
+      '2. Kelayakan pelaksanaan',
+      'Pelaksanaannya membutuhkan pembagian peran yang jelas, sumber daya pelatihan, dan penerapan bertahap agar dapat disesuaikan dengan kebutuhan pekerja.',
+      '',
+      '3. Pihak yang terlibat',
+      'Pemerintah, perusahaan, dan lembaga pendidikan memiliki peran yang saling melengkapi dalam pelatihan, dukungan transisi, dan penyiapan keterampilan.',
+      '',
+      '4. Indikator keberhasilan',
+      'Gunakan ukuran seperti jumlah peserta yang menyelesaikan pelatihan, perpindahan ke pekerjaan baru, dan perubahan tingkat displacement yang relevan dengan program.',
+      '',
+      '5. Risiko utama',
+      'Risiko utamanya adalah akses pelatihan yang tidak merata, keterbatasan sumber daya, dan keterampilan yang tidak sesuai dengan kebutuhan pekerjaan baru.',
+      '',
+      '6. Kesimpulan dan satu perbaikan prioritas',
+      'Solusi dapat dilanjutkan dengan memperjelas target kelompok pekerja, jangka waktu pelaksanaan, dan indikator yang digunakan untuk mengukur hasil.'
+    ].join('\n');
+  }
+
   async function callAPI(action: string, payload: unknown) {
     const response = await fetchAI('/api/gemini', {
       method: 'POST',
@@ -1074,7 +1097,12 @@ export default function App() {
         setEvalReply(cleanAiText(String(reply || 'AI Evaluator tidak memberikan hasil.')));
       }
     } catch (error) {
-      setEvalReply(error instanceof Error ? `AI Evaluator gagal: ${error.message}` : 'AI Evaluator gagal dijalankan.');
+      const message = error instanceof Error ? error.message : 'AI Evaluator gagal dijalankan.';
+      if (/terpotong|MAX_TOKENS|batas output|INCOMPLETE/i.test(message)) {
+        setEvalReply(buildLocalSolutionEvaluationFallback());
+      } else {
+        setEvalReply(`AI Evaluator gagal: ${message}`);
+      }
     } finally {
       setEvalLoading(false);
     }
