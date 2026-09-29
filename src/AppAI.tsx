@@ -1,4 +1,4 @@
-import { useDebateRun } from './history/useDebateRun';
+import { useDebateRun, type DebateJourneySnapshot } from './history/useDebateRun';
 import { fetchAI } from './team/api';
 /**
  * FRONTEND V2 — AI + GOOGLE SEARCH
@@ -458,20 +458,44 @@ export default function App() {
   const [solution, setSolution] = useState('');
   const [evalReply, setEvalReply] = useState('');
   const [evalLoading, setEvalLoading] = useState(false);
+  const [recommendation, setRecommendation] = useState('');
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
+
+  const journeySnapshot = useMemo<DebateJourneySnapshot>(() => ({
+    currentStage,
+    furthestStage,
+    exploration,
+    explorerReply,
+    explorerSources,
+    claims,
+    argument,
+    review,
+    debateLog,
+    sparringRound,
+    solution,
+    recommendation,
+    evaluation: evalReply,
+  }), [
+    currentStage,
+    furthestStage,
+    exploration,
+    explorerReply,
+    explorerSources,
+    claims,
+    argument,
+    review,
+    debateLog,
+    sparringRound,
+    solution,
+    recommendation,
+    evalReply,
+  ]);
 
   const debateRun = useDebateRun(
     selectedIssue,
     debatePosition,
     'v2',
-    currentStage === 7 &&
-    solution.trim() &&
-    evalReply.trim()
-      ? {
-          ...argument,
-          solution,
-          evaluation: evalReply,
-        }
-      : null,
+    journeySnapshot,
   );
 
   const verifiedClaims = useMemo(
@@ -488,7 +512,7 @@ export default function App() {
   const canReviewArgument = Boolean(argument.claim.trim() && argument.reason.trim() && argument.evidence.trim());
   const canProceedToDebate = canReviewArgument && Boolean(review.trim()) && !reviewLoading;
   const canProceedToSolution = sparringRound >= 1;
-  const canProceedToImpact = Boolean(solution.trim() && evalReply.trim()) && !evalLoading;
+  const canProceedToImpact = Boolean(solution.trim() && evalReply.trim() && recommendation.trim()) && !evalLoading && !recommendationLoading;
 
   useEffect(() => {
     let cancelled = false;
@@ -555,6 +579,8 @@ export default function App() {
     setSparringRound(0);
     setSolution('');
     setEvalReply('');
+    setRecommendation('');
+    setRecommendationLoading(false);
   }, [selectedIssue?.id, debatePosition]);
 
   useEffect(() => {
@@ -763,7 +789,7 @@ export default function App() {
 
   async function sendDebateMessage() {
     const message = debateInput.trim();
-    if (!message || debateLoading || sparringRound >= 3) return;
+    if (!message || debateLoading) return;
 
     const history = [...debateLog, { who: 'user' as const, text: message }];
     setDebateLog([...history, { who: 'ai', text: 'mengetik...' }]);
@@ -808,10 +834,29 @@ export default function App() {
         });
         setEvalReply(cleanAiText(String(reply || 'AI Evaluator tidak memberikan hasil.')));
       }
+      setRecommendation('');
     } catch (error) {
       setEvalReply(error instanceof Error ? `AI Evaluator gagal: ${error.message}` : 'AI Evaluator gagal dijalankan.');
     } finally {
       setEvalLoading(false);
+    }
+  }
+
+  async function getSolutionRecommendation() {
+    if (!solution.trim() || !evalReply.trim()) return;
+    setRecommendationLoading(true);
+    try {
+      const reply = await callAPI('recommendSolution', {
+        solution,
+        evaluation: evalReply,
+        issue: selectedIssue,
+        position: debatePosition,
+      });
+      setRecommendation(cleanAiText(String(reply || 'AI belum memberikan rekomendasi.')));
+    } catch (error) {
+      setRecommendation(error instanceof Error ? `AI Recommendation gagal: ${error.message}` : 'AI Recommendation gagal dijalankan.');
+    } finally {
+      setRecommendationLoading(false);
     }
   }
 
@@ -1072,8 +1117,7 @@ export default function App() {
           <p className="text-[#70758B] text-[15px] leading-7 max-w-[70ch] mb-6">AI di sini hanya sebagai sparring partner sebelum debat. Debat resmi tetap dilakukan siswa PRO dan KONTRA.</p>
 
           <div className="flex items-center gap-2 mb-4">
-            <span className="font-mono text-[10px] text-[#6C5CE7] uppercase tracking-[0.16em]">Sparring {sparringRound}/3</span>
-            {sparringRound >= 3 && <span className="font-mono text-[10px] px-2 py-1 rounded-full bg-[#6C5CE7]/12 text-[#6C5CE7] uppercase">Selesai</span>}
+            <span className="font-mono text-[10px] text-[#6C5CE7] uppercase tracking-[0.16em]">Sparring {sparringRound} ronde</span>
           </div>
 
           <div className="flex flex-col gap-2.5 mt-4">
@@ -1084,14 +1128,11 @@ export default function App() {
             ))}
           </div>
 
-          {sparringRound < 3 && (
-            <div className="flex gap-3 items-center mt-7 flex-wrap">
+          <div className="flex gap-3 items-center mt-7 flex-wrap">
               <input type="text" value={debateInput} onChange={(event) => setDebateInput(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && sendDebateMessage()} placeholder="Tulis responsmu..." className="flex-1 min-w-[200px] bg-white/90 border border-[#E6E7EF] rounded-[16px] text-[#1D2030] font-body text-sm px-4 py-3.5 focus:outline focus:outline-2 focus:outline-[#6C5CE7] focus:outline-offset-2 focus:border-[#6C5CE7]/50 placeholder:text-[#9A9DAF]" />
               <Btn onClick={sendDebateMessage} disabled={!debateInput.trim() || debateLoading}>{debateLoading ? 'Menilai...' : 'Kirim'}</Btn>
             </div>
-          )}
-
-          <div className="bg-white/80 border border-[#E6E7EF] rounded-[16px] px-4 py-3 mt-6 text-xs text-[#70758B] leading-relaxed">Batas sparring adalah 3 ronde agar AI tidak terus-menerus menantang tanpa akhir.</div>
+          <div className="bg-white/80 border border-[#E6E7EF] rounded-[16px] px-4 py-3 mt-6 text-xs text-[#70758B] leading-relaxed">Sparring dapat dilanjutkan selama masih relevan. Berhenti ketika argumenmu sudah cukup teruji untuk dibawa ke debat resmi.</div>
 
           <div className="flex gap-3 flex-wrap mt-8">
             <Btn secondary onClick={() => goTo(4)}>← Kembali</Btn>
@@ -1106,12 +1147,25 @@ export default function App() {
         <div className="animate-[rise_0.25s_ease]">
           <p className="font-mono text-xs tracking-wider text-[#6C5CE7] uppercase mb-2.5">06 — Solution Lab</p>
           <h1 className="font-display font-semibold text-[clamp(28px,4vw,42px)] leading-[1.08] tracking-[-0.02em] mb-4">Rancang solusimu</h1>
-          <InputField label="Rancangan solusi" isTextarea value={solution} onChange={(event) => setSolution(event.target.value)} placeholder="Jelaskan solusi konkretmu, siapa yang terlibat, dan bagaimana mengukur keberhasilannya." />
-          <div className="flex gap-3 flex-wrap mt-7 mb-5"><Btn secondary onClick={getSolutionEvaluation} disabled={!solution.trim() || evalLoading}>{evalLoading ? 'Mengevaluasi...' : 'Evaluasi kelayakan'}</Btn></div>
+          <InputField label="Rancangan solusi" isTextarea value={solution} onChange={(event) => { setSolution(event.target.value); setEvalReply(''); setRecommendation(''); }} placeholder="Jelaskan solusi konkretmu, siapa yang terlibat, dan bagaimana mengukur keberhasilannya." />
+          <div className="flex gap-3 flex-wrap mt-7 mb-5">
+            <Btn secondary onClick={getSolutionEvaluation} disabled={!solution.trim() || evalLoading}>
+              {evalLoading ? 'Mengevaluasi...' : 'Evaluasi kelayakan'}
+            </Btn>
+            <Btn onClick={getSolutionRecommendation} disabled={!solution.trim() || !evalReply.trim() || recommendationLoading}>
+              {recommendationLoading ? 'Menyusun rekomendasi...' : 'Minta rekomendasi AI'}
+            </Btn>
+          </div>
           {evalReply && !evalLoading && (
             <div className="bg-white/90 border border-[#E6E7EF] rounded-[20px] p-5 mt-5">
               <div className="font-mono text-[11px] text-[#6C5CE7] uppercase mb-1.5">AI · Evaluator {SOLUTION_EVALUATOR_MODE === 'api' ? '· API' : '· Simulasi'}</div>
               <p className="m-0 text-sm leading-relaxed text-[#1D2030] whitespace-pre-wrap">{evalReply}</p>
+            </div>
+          )}
+          {recommendation && !recommendationLoading && (
+            <div className="bg-[#F7F5FF] border border-[#DDD8FF] rounded-[20px] p-5 mt-4">
+              <div className="font-mono text-[11px] text-[#6C5CE7] uppercase mb-1.5">AI · Rekomendasi</div>
+              <p className="m-0 text-sm leading-relaxed text-[#1D2030] whitespace-pre-wrap">{recommendation}</p>
             </div>
           )}
           <div className="flex gap-3 flex-wrap mt-8">
@@ -1126,7 +1180,7 @@ export default function App() {
       <div className="animate-[rise_0.25s_ease]">
         <p className="font-mono text-xs tracking-wider text-[#6C5CE7] uppercase mb-2.5">07 — Impact</p>
         <h1 className="font-display font-semibold text-[clamp(28px,4vw,42px)] leading-[1.08] tracking-[-0.02em] mb-4">Perjalananmu</h1>
-        <p className="text-[#70758B] text-base leading-relaxed max-w-[65ch] mb-7">Ringkasan akhir perjalananmu dari isu, klaim, argumen, uji argumen, sampai solusi.</p>
+        <p className="text-[#70758B] text-base leading-relaxed max-w-[65ch] mb-7">Ringkasan akhir perjalananmu dari isu, klaim, argumen, uji argumen, sampai solusi, evaluasi, dan rekomendasi AI.</p>
 
         <div className="space-y-3">
           <div role="status">
@@ -1147,6 +1201,7 @@ export default function App() {
           <SummaryCard label="Bukti" value={argument.evidence || '-'} />
           <SummaryCard label="Solusi" value={solution || '-'} />
           <SummaryCard label="Evaluasi Solusi" value={evalReply || '-'} />
+          <SummaryCard label="Rekomendasi AI" value={recommendation || '-'} />
         </div>
 
         <div className="bg-white border border-[#E6E7EF] rounded-[18px] p-4 mt-5 text-sm text-[#1D2030]">

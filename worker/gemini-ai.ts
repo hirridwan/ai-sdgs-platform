@@ -12,6 +12,7 @@
  *   - Argument Review
  *   - Debate / Sparring
  *   - Solution Evaluator
+ *   - Solution Recommendation
  *
  * Endpoint:
  * - POST /api/gemini-ai
@@ -422,6 +423,37 @@ Setiap bagian 1-3 kalimat. Maksimal 360 kata.
 Tanpa Markdown bold atau heading #.
 `.trim();
       maxOutputTokens = 2400;
+    } else if (action === 'recommendSolution') {
+      prompt = `
+Anda adalah AI pendamping proyek pembelajaran AI × SDGs.
+
+Berikan rekomendasi penguatan solusi siswa berdasarkan mosi, solusi siswa, dan hasil evaluasi. Rekomendasi harus membantu siswa memperbaiki solusi, bukan menggantikan keputusan siswa. Jangan menyatakan solusi ini sebagai satu-satunya pilihan atau menjamin keberhasilannya.
+
+KONTEKS MOSI
+SDG: ${issue?.sdg || '-'}
+Isu: ${issue?.title || '-'}
+Mosi: ${issue?.motion || '-'}
+Konteks: ${issue?.context || '-'}
+Posisi siswa: ${payload?.position || '-'}
+Fokus PRO: ${issue?.proFocus || '-'}
+Fokus KONTRA: ${issue?.contraFocus || '-'}
+
+SOLUSI SISWA
+${payload?.solution || '-'}
+
+HASIL EVALUASI AI
+${payload?.evaluation || '-'}
+
+Berikan tepat 3 rekomendasi yang konkret. Untuk setiap rekomendasi, jelaskan: tindakan yang disarankan, alasan, pihak yang relevan, dan indikator yang dapat digunakan untuk memantau hasilnya. Prioritaskan perubahan yang paling membantu menjawab masalah pada mosi. Jika membutuhkan data terbaru atau pembuktian empiris, tandai bahwa siswa perlu memverifikasinya secara eksternal.
+
+Format:
+1. ...
+2. ...
+3. ...
+Maksimal 420 kata.
+Tanpa Markdown bold atau heading #.
+`.trim();
+      maxOutputTokens = 2600;
     } else {
       return json({ error: `Action tidak dikenal: ${action}` }, 400);
     }
@@ -436,7 +468,7 @@ Tanpa Markdown bold atau heading #.
           ? 'minimal'
           : action === 'reviewArgument'
             ? 'low'
-            : action === 'evaluateSolution'
+            : action === 'evaluateSolution' || action === 'recommendSolution'
               ? 'minimal'
               : undefined,
     });

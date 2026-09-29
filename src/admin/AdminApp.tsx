@@ -503,11 +503,11 @@ function DeleteInteractionButton({ item }: { item: Preview }) {
 
 const STAGE_INPUT_TITLE: Record<string, string> = {
   explore: 'Konteks yang Dipilih Tim', factCheck: 'Klaim yang Diajukan untuk Diperiksa',
-  reviewArgument: 'Argumen yang Disusun Tim', debate: 'Argumen Awal & Respons Ronde Ini', evaluateSolution: 'Solusi yang Diajukan Tim',
+  reviewArgument: 'Argumen yang Disusun Tim', debate: 'Argumen Awal & Respons Ronde Ini', evaluateSolution: 'Solusi yang Diajukan Tim', recommendSolution: 'Solusi dan evaluasi yang menjadi dasar rekomendasi',
 };
 const STAGE_OUTPUT_TITLE: Record<string, string> = {
   explore: 'Catatan Eksplorasi (AI)', factCheck: 'Hasil Pemeriksaan Klaim (AI)',
-  reviewArgument: 'Ulasan AI atas Argumen', debate: 'Sanggahan / Pertanyaan AI', evaluateSolution: 'Evaluasi AI atas Solusi',
+  reviewArgument: 'Ulasan AI atas Argumen', debate: 'Sanggahan / Pertanyaan AI', evaluateSolution: 'Evaluasi AI atas Solusi', recommendSolution: 'Rekomendasi AI untuk Penguatan Solusi',
 };
 function InteractionPage({ id, navigate }: { id: string; navigate: Navigate }) {
   const state = useLoad<{ interaction: Interaction }>(`/api/admin/interactions/${id}`), item = state.data?.interaction;

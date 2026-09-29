@@ -22,7 +22,7 @@ export function date(value: string | null): string {
   return Number.isNaN(parsed.getTime()) ? value : new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(parsed);
 }
 export const ACTIONS: Record<string, string> = {
-  explore: 'Eksplorasi isu', factCheck: 'Pemeriksaan fakta', reviewArgument: 'Ulasan argumen', debate: 'Latihan sanggahan AI', evaluateSolution: 'Evaluasi solusi',
+  explore: 'Eksplorasi isu', factCheck: 'Pemeriksaan fakta', reviewArgument: 'Ulasan argumen', debate: 'Latihan sanggahan AI', evaluateSolution: 'Evaluasi solusi', recommendSolution: 'Rekomendasi solusi AI',
 };
 export const backendName = (backend: string | null) => backend === 'v1' ? 'V1 · Source Pack' : backend === 'v2' ? 'V2 · AI + Web' : 'Versi tidak tercatat';
 export type Admin = { id: number; username: string; displayName: string };
