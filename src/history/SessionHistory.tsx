@@ -39,14 +39,80 @@ function date(value: string) {
   return new Date(value).toLocaleString('id-ID');
 }
 
-function Sources({ value }: { value: unknown }) {
-  if (!Array.isArray(value)) return null;
-  return <ul>{value.map((entry, i) => {
+function sourceDomain(source: ReturnType<typeof object>): string {
+  const storedDomain = text(source.domain).trim().replace(/^www\./i, '');
+  if (storedDomain && storedDomain !== 'vertexaisearch.cloud.google.com') return storedDomain;
+
+  const url = text(source.url).trim();
+  if (!/^https?:\/\//i.test(url)) return '';
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./i, '');
+    return hostname === 'vertexaisearch.cloud.google.com' ? '' : hostname;
+  } catch {
+    return '';
+  }
+}
+
+function isGroundingRedirect(url: string): boolean {
+  try {
+    return new URL(url).hostname.replace(/^www\./i, '').toLowerCase() === 'vertexaisearch.cloud.google.com';
+  } catch {
+    return false;
+  }
+}
+
+function uniqueSources(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const result: ReturnType<typeof object>[] = [];
+
+  for (const entry of value) {
     const source = object(entry);
-    const url = text(source.url);
-    if (!/^https?:\/\//i.test(url)) return null;
-    return <li key={i}><a href={url} target="_blank" rel="noopener noreferrer">{text(source.title) || url}</a></li>;
+    const title = text(source.title).trim().toLowerCase();
+    const domain = sourceDomain(source).toLowerCase();
+    const key = `${title}|${domain}` || text(source.url).trim().toLowerCase();
+    if (!title && !domain && !text(source.url).trim()) continue;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(source);
+  }
+  return result;
+}
+
+function Sources({ value }: { value: unknown }) {
+  const sources = uniqueSources(value);
+  if (!sources.length) return null;
+
+  return <ul>{sources.map((source, i) => {
+    const title = text(source.title).trim() || sourceDomain(source) || 'Sumber web';
+    const domain = sourceDomain(source);
+    const url = text(source.url).trim();
+    const canOpen = /^https?:\/\//i.test(url) && !isGroundingRedirect(url);
+    return <li key={`${title}-${domain}-${i}`}>
+      {canOpen
+        ? <a href={url} target="_blank" rel="noopener noreferrer">{title}{domain ? ` · ${domain}` : ''} ↗</a>
+        : <span>{title}{domain ? ` · ${domain}` : ''}</span>}
+    </li>;
   })}</ul>;
+}
+
+function JourneySources({ value }: { value: unknown }) {
+  return <Sources value={value} />;
+}
+
+function JourneyClaims({ value }: { value: unknown }) {
+  if (!Array.isArray(value)) return null;
+  return <div>{value.map((raw, i) => {
+    const claim = object(raw);
+    const sources = uniqueSources(claim.sources);
+    return <article key={i}>
+      <strong>{text(claim.claim)}</strong>
+      {text(claim.verdict) && <p>Verdict: {text(claim.verdict)}</p>}
+      {text(claim.explanation) && <p>{text(claim.explanation)}</p>}
+      {text(claim.caveat) && <p>{text(claim.caveat)}</p>}
+      {sources.length > 0 && <Sources value={sources} />}
+    </article>;
+  })}</div>;
 }
 
 function ResponseText({ value }: { value: unknown }) {
@@ -160,8 +226,8 @@ export default function SessionHistory({ teamId }: { teamId?: string }) {
               <JourneyField label="Tahap terjauh" value={journey.furthestStage} />
               <JourneyField label="Eksplorasi siswa" value={journey.exploration} />
               <JourneyField label="Respons AI Explorer" value={journey.explorerReply} />
-              <JourneyField label="Sumber Explorer" value={journey.explorerSources} />
-              <JourneyField label="Claims" value={journey.claims} />
+              <section><h4>Sumber Explorer</h4><JourneySources value={journey.explorerSources} /></section>
+              <section><h4>Claims</h4><JourneyClaims value={journey.claims} /></section>
               <JourneyField label="Argumen" value={journey.argument} />
               <JourneyField label="Review argumen" value={journey.review} />
               <JourneyField label="Log sparring" value={journey.debateLog} />

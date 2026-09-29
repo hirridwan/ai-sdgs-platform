@@ -87,15 +87,18 @@ function extractGrounding(data: any): GroundingInfo {
     ? metadata.webSearchQueries.map((value: any) => String(value)).filter(Boolean)
     : [];
 
+  // Google grounding can return several redirect URLs for the same underlying
+  // source. Deduplicate by the readable source identity rather than by URL.
+  // This prevents repeated entries such as "weforum.org · weforum.org".
   const seen = new Set<string>();
   const sources: GroundingSource[] = [];
 
   for (const chunk of chunks) {
     const web = chunk?.web;
     const url = String(web?.uri || '').trim();
-    if (!url || seen.has(url)) continue;
+    if (!url) continue;
 
-    const title = String(web?.title || '').trim();
+    const rawTitle = String(web?.title || '').trim();
     let domain = '';
 
     try {
@@ -106,23 +109,30 @@ function extractGrounding(data: any): GroundingInfo {
     }
 
     // Gemini grounding can expose an internal vertexaisearch redirect URL.
-    // Keep that URL only as the clickable target, but never present the
-    // internal hostname as the source domain shown to students.
-    if (!domain && title) {
-      const domainMatch = title.match(/(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)/i);
-      domain = domainMatch?.[1] || title;
+    // Keep that URL only as the clickable target, but never show the
+    // internal Google hostname to students.
+    if (!domain && rawTitle) {
+      const domainMatch = rawTitle.match(/(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)/i);
+      domain = domainMatch?.[1] || rawTitle;
     }
 
     if (!domain) domain = 'Sumber web';
 
-    seen.add(url);
+    const title = rawTitle || domain;
+    const sourceKey = `${domain.toLowerCase()}|${title.toLowerCase().replace(/\s+/g, ' ').trim()}`;
+    if (seen.has(sourceKey)) continue;
+
+    seen.add(sourceKey);
     sources.push({
-      title: title || domain,
+      title,
       url,
       domain,
       quality: 'lainnya',
       summary: 'Sumber web yang digunakan Gemini melalui Google Search grounding. Buka sumber asli sebelum menjadikannya bukti debat.',
     });
+
+    // Keep the source list readable for students/PDF export.
+    if (sources.length >= 8) break;
   }
 
   return { sources, searchQueries };
@@ -223,6 +233,11 @@ PENTING:
 - Jangan menganggap sebuah klaim benar hanya karena terdengar masuk akal.
 - Jika bukti web tidak cukup atau sumber saling bertentangan, gunakan verdict "unverifiable" atau jelaskan keterbatasannya.
 - Bedakan fakta, opini, dan prediksi.
+- Jangan memperlakukan angka dari laporan pasar kerja sebagai angka khusus AI jika sumbernya mencakup banyak tren.
+- Jika menggunakan WEF Future of Jobs 2025, bedakan proyeksi pasar kerja keseluruhan (berbagai tren makro) dari temuan yang secara khusus membahas AI/teknologi pemrosesan informasi.
+- Jangan menyimpulkan "AI menciptakan X pekerjaan bersih" hanya dari angka 170 juta peran baru dan 92 juta pekerjaan terdampak karena angka tersebut bukan proyeksi AI saja.
+- Jika bukti spesifik AI tidak tersedia, nyatakan keterbatasan tersebut dan jangan mengisi kekosongan dengan asumsi.
+- Angka confidence adalah tingkat keyakinan model terhadap verdict, bukan probabilitas matematis bahwa klaim benar. Gunakan secara konservatif.
 
 KONTEKS MOSI TERPILIH
 SDG: ${issue?.sdg || '-'}
@@ -308,6 +323,8 @@ Gunakan struktur:
 Konteks dasar harus netral. Jika posisi siswa tersedia, arahkan pertanyaan pemantik agar membantu penelitian posisi tersebut tetapi tetap tampilkan hal yang dapat mendukung maupun melemahkannya.
 Semua isi harus langsung relevan dengan mosi terpilih. Jangan membawa isu dari mosi lain.
 Untuk fakta yang berasal dari web, prioritaskan sumber primer/kredibel dan jangan mengada-adakan sumber. Jika sumber yang ditemukan berbeda atau bukti terbatas, nyatakan keterbatasannya.
+- Jangan menyamakan proyeksi 170 juta peran baru dan 92 juta pekerjaan yang terdampak dalam WEF Future of Jobs 2025 sebagai dampak AI saja; proyeksi tersebut mencakup berbagai tren pasar kerja.
+- Jika membahas dampak AI secara kuantitatif, gunakan angka AI-spesifik hanya bila sumber benar-benar menyatakannya, dan sebutkan bahwa itu adalah proyeksi/estimasi, bukan hasil yang sudah terjadi.
 Maksimal 500 kata.
 Tanpa Markdown bold atau heading #.
 `.trim();
@@ -372,6 +389,9 @@ Bahas secara konkret:
 4. satu perbaikan prioritas.
 
 Jika bukti membutuhkan verifikasi sumber, katakan bahwa siswa perlu mengeceknya secara eksternal.
+- Jangan menganggap setiap angka, proyeksi, atau sumber yang ditulis siswa sebagai fakta yang sudah terbukti.
+- Jika siswa menggunakan angka WEF 170 juta/92 juta, jelaskan bahwa angka tersebut merupakan proyeksi pasar kerja lintas berbagai tren, bukan angka AI-only. Minta sumber AI-spesifik bila klaim siswa memang tentang AI saja.
+- Berikan satu perbaikan prioritas yang cukup untuk membuat argumen siap diuji. Siswa tidak perlu mengejar argumen yang sempurna sebelum lanjut ke sparring.
 Jangan menyatakan argumen menang/kalah.
 Maksimal 260 kata.
 Tanpa Markdown bold atau heading #.
@@ -422,6 +442,8 @@ ${payload?.solution || '-'}
 
 Evaluasi secara spesifik terhadap mosi di atas.
 Untuk indikator keberhasilan, gunakan ukuran yang relevan dengan topik, bukan daftar generik.
+Nilai kelayakan sebagai penilaian konseptual berdasarkan informasi yang tersedia, bukan jaminan bahwa solusi pasti berhasil.
+Hindari bahasa absolut seperti "sangat layak" atau "pasti berhasil" bila keberhasilan bergantung pada anggaran, implementasi, atau bukti empiris.
 Jika suatu aspek membutuhkan data terbaru atau pembuktian empiris, tandai bahwa siswa perlu memverifikasinya secara eksternal.
 
 Tulis tepat 6 bagian:

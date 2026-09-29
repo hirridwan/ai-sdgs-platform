@@ -179,10 +179,29 @@ const EMPTY_ISSUE: Issue = {
 function getDomain(url: string | null): string {
   if (!url) return '';
   try {
-    return new URL(url).hostname.replace(/^www\./, '');
+    const hostname = new URL(url).hostname.replace(/^www\./, '');
+    return hostname === 'vertexaisearch.cloud.google.com' ? '' : hostname;
   } catch {
     return '';
   }
+}
+
+function uniqueSources(sources: Source[]): Source[] {
+  const seen = new Set<string>();
+  return sources.filter((source) => {
+    const domain = String(source.domain || getDomain(source.url) || '').trim().toLowerCase();
+    const title = String(source.title || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const key = `${domain}::${title || source.url || 'source'}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function sourceReference(source: Source): string {
+  const title = source.title || source.domain || 'Sumber web';
+  const domain = source.domain || getDomain(source.url);
+  return domain ? `${title} — ${domain}` : title;
 }
 
 function mapMotionToIssue(motion: MotionApiRow): Issue {
@@ -478,6 +497,7 @@ export default function App() {
 
   const [argument, setArgument] = useState<Argument>({ claim: '', reason: '', evidence: '' });
   const [review, setReview] = useState('');
+  const [reviewCount, setReviewCount] = useState(0);
   const [reviewLoading, setReviewLoading] = useState(false);
 
   const [debateLog, setDebateLog] = useState<{ who: 'ai' | 'user'; text: string }[]>([]);
@@ -604,6 +624,7 @@ export default function App() {
     setFactCheckError(null);
     setArgument({ claim: '', reason: '', evidence: '' });
     setReview('');
+    setReviewCount(0);
     setDebateLog([]);
     setDebateInput('');
     setSparringRound(0);
@@ -783,10 +804,10 @@ export default function App() {
   }
 
   function selectClaimForArgument(claim: ClaimResult) {
-    const sourceEvidence = claim.sources.map((source) => [
-      `Sumber: ${source.title}`,
+    const sources = uniqueSources(claim.sources);
+    const sourceEvidence = sources.map((source) => [
+      `Sumber: ${sourceReference(source)}`,
       `Ringkasan sumber web: ${source.summary || 'Ringkasan sumber belum tersedia.'}`,
-      `URL: ${source.url}`,
     ].join('\n')).join('\n\n');
 
     setArgument({
@@ -797,6 +818,7 @@ export default function App() {
         : sourceEvidence,
     });
     setReview('');
+    setReviewCount(0);
     goTo(4);
   }
 
@@ -806,6 +828,7 @@ export default function App() {
       if (ARGUMENT_REVIEW_MODE === 'dummy') {
         await fakeDelay();
         setReview(mockArgumentReview(selectedIssue, argument));
+        setReviewCount((value) => value + 1);
       } else {
         const reply = await callAPI('reviewArgument', {
           issue: selectedIssue,
@@ -813,6 +836,7 @@ export default function App() {
           argument,
         });
         setReview(cleanAiText(String(reply || 'AI Reviewer tidak memberikan hasil.')));
+        setReviewCount((value) => value + 1);
       }
     } catch (error) {
       setReview(error instanceof Error ? `AI Reviewer gagal: ${error.message}` : 'AI Reviewer gagal dijalankan.');
@@ -978,7 +1002,7 @@ export default function App() {
             <div className="bg-white/90 border border-[#E6E7EF] rounded-[20px] p-5 mb-6">
               <div className="font-mono text-[10px] text-[#6C5CE7] uppercase tracking-[0.16em] mb-2">Sumber web yang digunakan</div>
               <div className="space-y-2">
-                {explorerSources.map((source) => (
+                {uniqueSources(explorerSources).map((source) => (
                   <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="block bg-[#F6F7FB]/70 border border-[#E6E7EF] rounded-[16px] p-4 hover:border-[#6C5CE7]/60 hover:bg-white/80 transition-colors">
                     <div className="font-mono text-[10px] text-[#70758B] uppercase">{source.domain}{source.year ? ` · ${source.year}` : ''}{source.scope ? ` · ${source.scope}` : ''}</div>
                     <div className="text-sm text-[#1D2030] mt-1">{source.title}</div>
@@ -1053,18 +1077,19 @@ export default function App() {
                     <div className="flex gap-2 items-center flex-wrap">
                       <span className={`font-mono text-[10px] px-2 py-1 rounded-full whitespace-nowrap uppercase ${meta.color}`}>{meta.label}</span>
                       <span className="font-mono text-[10px] px-2 py-1 rounded-full bg-slate/10 text-[#70758B] uppercase">{claim.type}</span>
-                      <span className="font-mono text-[10px] text-[#70758B]">Confidence {claim.confidence}%</span>
+                      <span className="font-mono text-[10px] text-[#70758B]">Keyakinan AI {claim.confidence}%</span>
                     </div>
                     <Btn secondary onClick={() => recheckClaim(claim)} disabled={isRechecking}>{isRechecking ? 'Memeriksa...' : 'Periksa ulang'}</Btn>
                   </div>
                   <h3 className="font-display text-base mt-3 mb-2">{claim.claim}</h3>
                   <p className="text-sm leading-relaxed text-[#1D2030] m-0">{claim.explanation}</p>
+                  <p className="text-[11px] text-[#70758B] mt-2 mb-0">Keyakinan AI adalah estimasi model terhadap verdict, bukan probabilitas matematis bahwa klaim pasti benar.</p>
                   {claim.caveat && <div className="bg-[#F2A93B]/10 border border-[#F2A93B]/20 rounded-[10px] p-3 mt-3 text-sm leading-relaxed"><strong>Catatan konteks:</strong> {claim.caveat}</div>}
                   {claim.sources.length > 0 && (
                     <div className="mt-4">
                       <div className="font-mono text-[10px] text-[#6C5CE7] uppercase tracking-[0.16em] mb-2">{FACT_CHECK_MODE === 'dummy' ? 'Referensi simulasi' : 'Sumber web yang digunakan'}</div>
                       <div className="space-y-2">
-                        {claim.sources.map((source) => (
+                        {uniqueSources(claim.sources).map((source) => (
                           <a key={`${claim.id}-${source.url}`} href={source.url} target="_blank" rel="noreferrer" className="block bg-[#F6F7FB]/70 border border-[#E6E7EF] rounded-[16px] p-4 hover:border-[#6C5CE7]/60 hover:bg-white/80 transition-colors">
                             <div className="font-mono text-[10px] text-[#70758B] uppercase">{qualityLabel[source.quality]} · {source.domain}{source.year ? ` · ${source.year}` : ''}{source.scope ? ` · ${source.scope}` : ''}</div>
                             <div className="text-sm text-[#1D2030] mt-1">{source.title}</div>
@@ -1114,24 +1139,25 @@ export default function App() {
                 {verifiedClaims.map((claim) => (
                   <button key={claim.id} type="button" onClick={() => selectClaimForArgument(claim)} className="block text-left w-full bg-[#F6F7FB] border border-[#E6E7EF] rounded-[10px] p-3 text-sm hover:border-[#6C5CE7]">
                     <span className="text-[#1D2030]">{claim.claim}</span>
-                    <span className="block text-[11px] text-[#70758B] mt-1">{claim.sources.length} sumber referensi</span>
+                    <span className="block text-[11px] text-[#70758B] mt-1">{uniqueSources(claim.sources).length} sumber referensi unik</span>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          <InputField label="Klaim" value={argument.claim} onChange={(event) => setArgument({ ...argument, claim: event.target.value })} placeholder="Apa yang kamu nyatakan?" />
-          <InputField label="Alasan" value={argument.reason} onChange={(event) => setArgument({ ...argument, reason: event.target.value })} placeholder="Mengapa klaim itu penting/masuk akal?" />
-          <InputField label="Bukti" isTextarea value={argument.evidence} onChange={(event) => setArgument({ ...argument, evidence: event.target.value })} placeholder="Masukkan temuan spesifik dari sumber, lalu sertakan URL sumber." />
+          <InputField label="Klaim" value={argument.claim} onChange={(event) => { setArgument({ ...argument, claim: event.target.value }); setReview(''); setReviewCount(0); }} placeholder="Apa yang kamu nyatakan?" />
+          <InputField label="Alasan" value={argument.reason} onChange={(event) => { setArgument({ ...argument, reason: event.target.value }); setReview(''); setReviewCount(0); }} placeholder="Mengapa klaim itu penting/masuk akal?" />
+          <InputField label="Bukti" isTextarea value={argument.evidence} onChange={(event) => { setArgument({ ...argument, evidence: event.target.value }); setReview(''); setReviewCount(0); }} placeholder="Masukkan temuan spesifik dari sumber dan sebutkan sumbernya." />
 
-          <div className="flex gap-3 flex-wrap mt-7 mb-5"><Btn secondary onClick={getReview} disabled={!canReviewArgument || reviewLoading}>{reviewLoading ? 'Mereview...' : 'Minta review AI'}</Btn></div>
+          <div className="flex gap-3 flex-wrap mt-7 mb-5"><Btn secondary onClick={getReview} disabled={!canReviewArgument || reviewLoading}>{reviewLoading ? 'Mereview...' : reviewCount > 0 ? 'Review ulang AI' : 'Minta review AI'}</Btn></div>
 
           {!canReviewArgument && <p className="text-xs text-[#70758B] mt-2">Lengkapi klaim, alasan, dan bukti sebelum meminta review.</p>}
           {review && !reviewLoading && (
             <div className="bg-white/90 border border-[#E6E7EF] rounded-[20px] p-5 mt-5">
               <div className="font-mono text-[11px] text-[#6C5CE7] uppercase mb-1.5">AI · Reviewer {ARGUMENT_REVIEW_MODE === 'api' ? '· API' : '· Simulasi'}</div>
               <p className="m-0 text-sm leading-relaxed text-[#1D2030] whitespace-pre-wrap">{review}</p>
+              <p className="text-xs text-[#70758B] mt-4 mb-0">Satu review sudah cukup untuk melanjutkan ke Sparring. Review adalah bahan perbaikan, bukan syarat untuk membuat argumen sempurna. Ulangi hanya jika kamu mengubah klaim, alasan, atau bukti.</p>
             </div>
           )}
 
@@ -1379,15 +1405,15 @@ export default function App() {
             <h2>2. Eksplorasi Isu</h2>
             <div className="print-card"><p>{explorerReply || '-'}</p></div>
             {exploration && <div className="print-card"><h3>Catatan eksplorasi siswa</h3><p>{exploration}</p></div>}
-            {explorerSources.length > 0 && <div className="print-card"><h3>Sumber eksplorasi</h3><ul>{explorerSources.map((source, index) => <li key={`print-explorer-${index}`} className="print-source"><strong>{source.title || source.domain || 'Sumber web'}</strong>{source.domain ? ` · ${source.domain}` : ''}</li>)}</ul></div>}
+            {explorerSources.length > 0 && <div className="print-card"><h3>Sumber eksplorasi</h3><ul>{uniqueSources(explorerSources).map((source, index) => <li key={`print-explorer-${index}`} className="print-source"><strong>{source.title || source.domain || 'Sumber web'}</strong>{source.domain ? ` · ${source.domain}` : ''}</li>)}</ul></div>}
 
             <h2>3. Fact Check</h2>
             {claims.length ? claims.map((claim) => <div className="print-card" key={`print-claim-${claim.id}`}>
               <h3>{claim.claim}</h3>
-              <p><strong>Verdict:</strong> {verdictMeta[claim.verdict].label} · <strong>Confidence:</strong> {claim.confidence}%</p>
+              <p><strong>Verdict:</strong> {verdictMeta[claim.verdict].label} · <strong>Keyakinan AI:</strong> {claim.confidence}%</p><p className="print-muted">Keyakinan AI adalah estimasi model terhadap verdict, bukan probabilitas matematis bahwa klaim pasti benar.</p>
               <p>{claim.explanation}</p>
               {claim.caveat && <p className="print-muted"><strong>Catatan:</strong> {claim.caveat}</p>}
-              {claim.sources?.length > 0 && <ul>{claim.sources.map((source, index) => <li key={`print-claim-source-${claim.id}-${index}`} className="print-source"><strong>{source.title || source.domain || 'Sumber web'}</strong>{source.domain ? ` · ${source.domain}` : ''}</li>)}</ul>}
+              {claim.sources?.length > 0 && <ul>{uniqueSources(claim.sources).map((source, index) => <li key={`print-claim-source-${claim.id}-${index}`} className="print-source"><strong>{source.title || source.domain || 'Sumber web'}</strong>{source.domain ? ` · ${source.domain}` : ''}</li>)}</ul>}
             </div>) : <div className="print-card"><p>Belum ada klaim yang tersimpan.</p></div>}
 
             <h2>4. Argumen</h2>
