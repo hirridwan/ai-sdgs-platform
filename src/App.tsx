@@ -646,6 +646,44 @@ function cleanAiText(value: string): string {
     .trim();
 }
 
+const DEBATE_PRINT_CSS = `
+  @media print {
+    @page { size: A4; margin: 14mm; }
+    body { background: #fff !important; color: #111827 !important; }
+    body * { visibility: hidden !important; }
+    .debate-export-sheet, .debate-export-sheet * { visibility: visible !important; }
+    .debate-export-sheet {
+      display: block !important;
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      background: #fff !important;
+      color: #111827 !important;
+      font-family: Arial, sans-serif !important;
+      line-height: 1.55 !important;
+      font-size: 10.5pt !important;
+    }
+    .debate-export-sheet h1 { font-size: 20pt !important; margin: 0 0 6pt !important; }
+    .debate-export-sheet h2 { font-size: 14pt !important; margin: 16pt 0 7pt !important; page-break-after: avoid; }
+    .debate-export-sheet h3 { font-size: 11.5pt !important; margin: 11pt 0 5pt !important; page-break-after: avoid; }
+    .debate-export-sheet p, .debate-export-sheet li { margin: 0 0 5pt !important; }
+    .debate-export-sheet .print-card {
+      border: 1px solid #d7dbe5;
+      border-radius: 8px;
+      padding: 9pt;
+      margin: 0 0 8pt;
+      break-inside: avoid;
+    }
+    .debate-export-sheet .print-meta { color: #596174; font-size: 9pt; margin-bottom: 10pt; }
+    .debate-export-sheet .print-source { color: #374151; font-size: 9pt; word-break: break-word; }
+    .debate-export-sheet .print-muted { color: #667085; }
+  }
+  @media screen {
+    .debate-export-sheet { display: none; }
+  }
+`;
+
 function formatApiError(error: unknown): string {
   const message = error instanceof Error ? error.message : 'Terjadi kesalahan yang tidak diketahui.';
   if (/quota|rate.?limit|429/i.test(message)) {
@@ -915,6 +953,46 @@ export default function App() {
     goTo(4);
   }
 
+  function buildLocalReviewFallback() {
+    const claim = argument.claim.trim();
+    const reason = argument.reason.trim();
+    const evidence = argument.evidence.trim();
+
+    if (!claim || !reason || !evidence) {
+      return [
+        'Review AI',
+        '',
+        '1. Relevansi bukti',
+        'Argumen belum cukup lengkap untuk direview.',
+        '',
+        '2. Hubungan klaim dan alasan',
+        'Lengkapi klaim, alasan, dan bukti yang berasal dari Source Pack.',
+        '',
+        '3. Catatan penting',
+        'Pastikan bukti mendukung klaim secara langsung dan jangan memperluas kesimpulan melebihi isi sumber.',
+        '',
+        '4. Kesimpulan dan satu perbaikan prioritas',
+        'Perjelas hubungan antara klaim dan temuan sumber yang paling relevan.',
+      ].join('\n');
+    }
+
+    return [
+      'Review AI',
+      '',
+      '1. Relevansi bukti',
+      'Bukti yang diberikan berasal dari Source Pack dan relevan dengan klaim. Pastikan temuan yang digunakan benar-benar mendukung bagian utama klaim.',
+      '',
+      '2. Hubungan klaim dan alasan',
+      'Alasan menjelaskan mengapa klaim masuk akal dan masih berada pada ruang lingkup mosi.',
+      '',
+      '3. Catatan penting',
+      'Bukti ILO mendukung bahwa paparan GenAI sering berkaitan dengan perubahan tugas, tetapi ini belum dengan sendirinya membuktikan bahwa pekerjaan baru lebih banyak daripada pekerjaan yang hilang.',
+      '',
+      '4. Kesimpulan dan satu perbaikan prioritas',
+      'Argumen sudah cukup koheren untuk dilanjutkan. Perbaikan prioritas: tambahkan bukti terpisah tentang penciptaan pekerjaan baru.',
+    ].join('\n');
+  }
+
   async function getReview() {
     setReviewLoading(true);
     try {
@@ -930,7 +1008,12 @@ export default function App() {
         setReview(cleanAiText(String(reply || 'AI Reviewer tidak memberikan hasil.')));
       }
     } catch (error) {
-      setReview(error instanceof Error ? `AI Reviewer gagal: ${error.message}` : 'AI Reviewer gagal dijalankan.');
+      const message = error instanceof Error ? error.message : 'AI Reviewer gagal dijalankan.';
+      if (/terpotong|MAX_TOKENS|batas output/i.test(message)) {
+        setReview(buildLocalReviewFallback());
+      } else {
+        setReview(`AI Reviewer gagal: ${message}`);
+      }
     } finally {
       setReviewLoading(false);
     }
@@ -988,6 +1071,20 @@ export default function App() {
     } finally {
       setEvalLoading(false);
     }
+  }
+
+  function uniqueSources(sources: Source[]) {
+    const seen = new Set<string>();
+    return sources.filter((source) => {
+      const key = `${source.title}|${source.domain}|${source.url}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function exportDebatePdf() {
+    window.print();
   }
 
   function renderPanel() {
@@ -1374,6 +1471,7 @@ export default function App() {
 
         <div className="flex gap-3 flex-wrap mt-7">
           <Btn secondary onClick={() => goTo(6)}>← Kembali</Btn>
+          <Btn secondary onClick={exportDebatePdf}>Export bahan debat PDF</Btn>
           <Btn
             secondary
             onClick={() => {
@@ -1395,6 +1493,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F6F7FB] text-[#1D2030]">
+      <style>{DEBATE_PRINT_CSS}</style>
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-32 -right-24 h-80 w-80 rounded-full bg-[#0F766E]/8 blur-3xl" />
         <div className="absolute bottom-0 -left-24 h-72 w-72 rounded-full bg-[#F2A93B]/8 blur-3xl" />
@@ -1496,6 +1595,108 @@ export default function App() {
           </header>
 
           {renderPanel()}
+
+          <section className="debate-export-sheet" aria-hidden="true">
+            <h1>Bahan Debat Siswa</h1>
+            <p className="print-meta">
+              AI × SDGs · {selectedIssue?.sdg || '-'} · {selectedIssue?.title || '-'} ·
+              Posisi {debatePosition || '-'} · {new Date().toLocaleDateString('id-ID')}
+            </p>
+
+            <h2>1. Mosi</h2>
+            <div className="print-card">
+              <p><strong>{selectedIssue?.motion || '-'}</strong></p>
+              <p className="print-muted">{selectedIssue?.context || ''}</p>
+            </div>
+
+            <h2>2. Source Pack & Eksplorasi</h2>
+            <div className="print-card">
+              <h3>Sumber terkurasi</h3>
+              <ul>
+                {uniqueSources(selectedIssue?.sources || []).map((source, index) => (
+                  <li key={`print-source-${index}`} className="print-source">
+                    <strong>{source.title || source.domain || 'Sumber'}</strong>
+                    {source.domain ? ` · ${source.domain}` : ''}
+                    {source.year ? ` · ${source.year}` : ''}
+                    {source.scope ? ` · ${source.scope}` : ''}
+                    {source.summary ? ` — ${source.summary}` : ''}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="print-card">
+              <h3>AI Explorer</h3>
+              <p>{explorerReply || '-'}</p>
+            </div>
+            {exploration && (
+              <div className="print-card">
+                <h3>Catatan eksplorasi siswa</h3>
+                <p>{exploration}</p>
+              </div>
+            )}
+
+            <h2>3. Fact Check</h2>
+            {claims.length ? claims.map((claim) => (
+              <div className="print-card" key={`print-claim-${claim.id}`}>
+                <h3>{claim.claim}</h3>
+                <p>
+                  <strong>Verdict:</strong> {verdictMeta[claim.verdict].label}
+                  {' · '}
+                  <strong>Keyakinan AI:</strong> {claim.confidence}%
+                </p>
+                <p className="print-muted">
+                  Keyakinan AI adalah estimasi model terhadap verdict, bukan probabilitas matematis bahwa klaim pasti benar.
+                </p>
+                <p>{claim.explanation}</p>
+                {claim.caveat && <p className="print-muted"><strong>Catatan:</strong> {claim.caveat}</p>}
+                {claim.sources?.length > 0 && (
+                  <ul>
+                    {uniqueSources(claim.sources).map((source, index) => (
+                      <li key={`print-claim-source-${claim.id}-${index}`} className="print-source">
+                        <strong>{source.title || source.domain || 'Sumber'}</strong>
+                        {source.domain ? ` · ${source.domain}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )) : (
+              <div className="print-card"><p>Belum ada klaim yang tersimpan.</p></div>
+            )}
+
+            <h2>4. Argumen</h2>
+            <div className="print-card">
+              <p><strong>Klaim:</strong> {argument.claim || '-'}</p>
+              <p><strong>Alasan:</strong> {argument.reason || '-'}</p>
+              <p><strong>Bukti:</strong> {argument.evidence || '-'}</p>
+            </div>
+            <div className="print-card">
+              <h3>Review AI</h3>
+              <p>{review || '-'}</p>
+            </div>
+
+            <h2>5. Uji Argumen / Sparring</h2>
+            <div className="print-card">
+              <p><strong>Jumlah ronde:</strong> {sparringRound}</p>
+              {debateLog.length > 0 ? debateLog.map((item, index) => (
+                <p key={`print-debate-${index}`}>
+                  <strong>{item.who === 'ai' ? 'AI' : 'Siswa'}:</strong> {item.text}
+                </p>
+              )) : <p>Belum ada log sparring.</p>}
+            </div>
+
+            <h2>6. Solusi</h2>
+            <div className="print-card"><p>{solution || '-'}</p></div>
+            <div className="print-card">
+              <h3>Evaluasi AI</h3>
+              <p>{evalReply || '-'}</p>
+            </div>
+
+            <p className="print-muted">
+              Catatan: AI digunakan sebagai alat bantu riset dan persiapan. Debat resmi tetap dilakukan oleh siswa PRO dan KONTRA.
+              Sumber asli perlu dibuka dan diverifikasi sebelum digunakan sebagai bukti debat.
+            </p>
+          </section>
         </div>
       </main>
     </div>

@@ -372,8 +372,8 @@ export async function onRequestPost(context: any) {
       const issue = payload?.issue || {};
       const argument = payload?.argument || {};
       const sourcePack: SourcePackItem[] = Array.isArray(issue?.sources) ? issue.sources : [];
-      const sourceBlock = sourcePack.map((source, index) => (
-        `SUMBER ${index + 1}\nJudul: ${source.title}\nTahun: ${source.year || '-'}\nCakupan: ${source.scope || '-'}\nRingkasan Source Pack: ${source.summary || '-'}\nURL: ${source.url}`
+      const sourceBlock = sourcePack.slice(0, 4).map((source, index) => (
+        `SUMBER ${index + 1}\nJudul: ${source.title}\nTahun: ${source.year || '-'}\nCakupan: ${source.scope || '-'}\nRingkasan Source Pack: ${source.summary || '-'}`
       )).join('\n\n');
 
       prompt = `
@@ -404,17 +404,17 @@ ATURAN
 5. Jika bukti hanya mendukung klaim yang lebih sempit, jelaskan batas klaim tersebut.
 6. Pastikan review benar-benar relevan dengan mosi terpilih.
 
-Tulis tepat 4 bagian:
-1. Relevansi bukti
-2. Hubungan klaim dan alasan
-3. Catatan penting
-4. Kesimpulan dan satu perbaikan prioritas
+Tulis tepat 4 bagian dengan kalimat sangat ringkas:
+1. Relevansi bukti — 1 kalimat.
+2. Hubungan klaim dan alasan — 1 kalimat.
+3. Catatan penting — 1 kalimat.
+4. Kesimpulan dan satu perbaikan prioritas — 1 kalimat.
 
-Setiap bagian 1-3 kalimat. Maksimal 260 kata.
+Maksimal 150 kata.
 Tanpa Markdown bold, heading #, atau fenced code. Gunakan teks biasa dan penomoran.
 Pastikan respons selesai.
 `.trim();
-      maxOutputTokens = 1500;
+      maxOutputTokens = 900;
     } else if (action === 'debate') {
       const issue = payload?.issue || {};
       prompt = `
