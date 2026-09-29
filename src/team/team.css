@@ -18,7 +18,7 @@
 .team-ui input, .team-ui select, .team-ui textarea { display: block; width: 100%; min-width: 0; background: #fbfbfe; color: #25243b; border: 1px solid #dcdce8; border-radius: 10px; padding: 11px 12px; font: inherit; font-weight: 400; margin-top: 6px; }
 .team-ui textarea { resize: vertical; }
 .team-ui fieldset { border: 0; padding: 0; min-width: 0; }
-.team-topbar { position: relative; z-index: 110; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding: 15px 28px; background: white; border-bottom: 1px solid #e6e7ef; box-shadow: 0 3px 16px #25243b06; }
+.team-topbar { position: sticky; top: 0; z-index: 110; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding: 15px 28px; background: white; border-bottom: 1px solid #e6e7ef; box-shadow: 0 3px 16px #25243b06; }
 .team-toplinks, .team-account, .team-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .team-toplinks a { font-size: 13px; padding: 7px 9px; border-radius: 8px; }
 .team-toplinks a[aria-current] { background: #f0edff; font-weight: 700; }

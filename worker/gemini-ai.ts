@@ -95,20 +95,33 @@ function extractGrounding(data: any): GroundingInfo {
     const url = String(web?.uri || '').trim();
     if (!url || seen.has(url)) continue;
 
-    let domain = url;
+    const title = String(web?.title || '').trim();
+    let domain = '';
+
     try {
-      domain = new URL(url).hostname.replace(/^www\\./i, '');
+      const hostname = new URL(url).hostname.replace(/^www\./i, '');
+      domain = hostname === 'vertexaisearch.cloud.google.com' ? '' : hostname;
     } catch {
-      // Keep the raw URL as a fallback domain label.
+      // Use the source title as a readable fallback below.
     }
+
+    // Gemini grounding can expose an internal vertexaisearch redirect URL.
+    // Keep that URL only as the clickable target, but never present the
+    // internal hostname as the source domain shown to students.
+    if (!domain && title) {
+      const domainMatch = title.match(/(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)/i);
+      domain = domainMatch?.[1] || title;
+    }
+
+    if (!domain) domain = 'Sumber web';
 
     seen.add(url);
     sources.push({
-      title: String(web?.title || domain),
+      title: title || domain,
       url,
       domain,
       quality: 'lainnya',
-      summary: 'Sumber web yang digunakan Gemini melalui Google Search grounding.',
+      summary: 'Sumber web yang digunakan Gemini melalui Google Search grounding. Buka sumber asli sebelum menjadikannya bukti debat.',
     });
   }
 
