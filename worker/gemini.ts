@@ -445,10 +445,10 @@ BUKTI: ${payload?.arg?.evidence || ''}
 RESPONS SISWA RONDE ${payload?.round || 1}: ${payload?.msg || ''}
 
 Berikan SATU pertanyaan penguji atau SATU sanggahan yang paling penting. Fokus pada hubungan klaim, alasan, bukti, dan gap bukti terhadap mosi. Jangan mengarang data baru.
-Maksimal 80 kata.
+Maksimal 130 kata.
 Tanpa Markdown. Langsung ke inti.
 `.trim();
-      maxOutputTokens = 700;
+      maxOutputTokens = 1200;
       thinkingLevel = 'minimal';
     } else if (action === 'evaluateSolution') {
       const issue = payload?.issue || {};
@@ -501,6 +501,58 @@ Jangan melakukan penalaran panjang; langsung berikan hasil evaluasi.
 Pastikan respons selesai.
 `.trim();
       maxOutputTokens = 1000;
+      thinkingLevel = 'minimal';
+    } else if (action === 'recommendSolution') {
+      const issue = payload?.issue || {};
+      const sourcePack: SourcePackItem[] = Array.isArray(issue?.sources) ? issue.sources : [];
+      const sourceBlock = sourcePack.slice(0, 4).map((source, index) => (
+        `SUMBER ${index + 1}: ${source.title} | Tahun: ${source.year || '-'} | Cakupan: ${source.scope || '-'}
+Ringkasan: ${source.summary || '-'}`
+      )).join('\n');
+
+      prompt = `
+Anda adalah AI pendamping proyek pembelajaran AI × SDGs.
+
+Berikan rekomendasi penguatan solusi siswa berdasarkan mosi, solusi siswa, dan hasil evaluasi. Rekomendasi membantu siswa memperbaiki solusi, bukan menggantikan keputusan siswa. Jangan menyatakan solusi ini sebagai satu-satunya pilihan atau menjamin keberhasilannya.
+
+KONTEKS MOSI
+SDG: ${issue?.sdg || '-'}
+Isu: ${issue?.title || '-'}
+Mosi: ${issue?.motion || '-'}
+Konteks: ${issue?.context || '-'}
+Posisi siswa: ${payload?.position || '-'}
+Fokus PRO: ${issue?.proFocus || '-'}
+Fokus KONTRA: ${issue?.contraFocus || '-'}
+
+SOLUSI SISWA
+${payload?.solution || '-'}
+
+HASIL EVALUASI AI
+${payload?.evaluation || '-'}
+
+SOURCE PACK MOSI
+${sourceBlock || '-'}
+
+ATURAN
+1. Rekomendasi harus spesifik terhadap mosi dan solusi siswa.
+2. Gunakan Source Pack hanya sebagai konteks; jangan mengarang angka, sumber, atau bukti baru.
+3. Jangan menentukan pemenang debat dan jangan menyatakan posisi siswa pasti benar.
+4. Setiap rekomendasi harus membantu membuat solusi lebih konkret, layak, dan terukur.
+5. Jika membutuhkan data terbaru atau pembuktian empiris di luar Source Pack, tandai bahwa siswa perlu memverifikasinya secara eksternal.
+
+Berikan tepat 3 rekomendasi.
+Untuk setiap rekomendasi jelaskan tindakan yang disarankan, alasan, pihak yang relevan, dan indikator yang dapat dipakai untuk memantau hasil.
+
+Format:
+1. ...
+2. ...
+3. ...
+
+Maksimal 300 kata.
+Tanpa Markdown bold, heading #, atau fenced code.
+Pastikan respons selesai.
+`.trim();
+      maxOutputTokens = 1400;
       thinkingLevel = 'minimal';
     } else {
       return json({ error: `Action tidak dikenal: ${action}` }, 400);
