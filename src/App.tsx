@@ -992,7 +992,7 @@ export default function App() {
     if (stage === 'home') {
       return (
         <div className="animate-[rise_0.25s_ease]">
-          <p className="font-mono text-xs tracking-wider text-[#0F766E] uppercase mb-2.5">AI × SDGs Platform</p>
+          <p className="font-mono text-xs tracking-wider text-[#0F766E] uppercase mb-2.5">AI × SDGs Platform · SOURCE PACK</p>
           <h1 className="font-display font-semibold text-[clamp(28px,4vw,42px)] leading-[1.1] mb-4">Dari isu global<br />ke solusi nyata.</h1>
           <p className="text-[#70758B] text-base leading-relaxed max-w-[60ch] mb-8">Eksplorasi isu SDGs, periksa klaim dengan bukti, bangun argumen, uji argumenmu sebelum debat siswa, lalu kembangkan solusi.</p>
           <Btn onClick={() => goTo(1)}>Mulai Eksplorasi</Btn>
