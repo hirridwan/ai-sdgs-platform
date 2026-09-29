@@ -460,10 +460,10 @@ const SAMPLE_ISSUES: Issue[] = [
 const verdictMeta: Record<ClaimResult['verdict'], { label: string; color: string }> = {
   verified: { label: 'Terverifikasi', color: 'bg-[#0F766E]/20 text-[#0F766E]' },
   mostly_true: { label: 'Sebagian besar benar', color: 'bg-[#0F766E]/20 text-[#0F766E]' },
-  misleading: { label: 'Menyesatkan', color: 'bg-[#D97757]/20 text-[#B4532F]' },
-  false: { label: 'Bertentangan', color: 'bg-[#D97757]/15 text-[#B4532F]' },
-  unverifiable: { label: 'Belum terverifikasi', color: 'bg-[#D97757]/20 text-[#B4532F]' },
-  not_fact: { label: 'Bukan klaim fakta', color: 'bg-slate/20 text-[#667270]' },
+  misleading: { label: 'Menyesatkan', color: 'bg-[#FFF8EC]/20 text-[#B97819]' },
+  false: { label: 'Bertentangan', color: 'bg-coral/20 text-coral' },
+  unverifiable: { label: 'Belum terverifikasi', color: 'bg-[#FFF8EC]/20 text-[#B97819]' },
+  not_fact: { label: 'Bukan klaim fakta', color: 'bg-slate/20 text-[#70758B]' },
 };
 
 const qualityLabel: Record<Source['quality'], string> = {
@@ -991,10 +991,10 @@ export default function App() {
 
     if (stage === 'home') {
       return (
-        <div className="animate-[rise_0.35s_ease]">
+        <div className="animate-[rise_0.25s_ease]">
           <p className="font-mono text-xs tracking-wider text-[#0F766E] uppercase mb-2.5">AI × SDGs Platform</p>
-          <h1 className="font-display font-semibold text-[clamp(28px,4vw,44px)] leading-[1.1] mb-4">Dari isu global<br />ke solusi nyata.</h1>
-          <p className="text-[#667270] text-base leading-relaxed max-w-[60ch] mb-8">Eksplorasi isu SDGs, periksa klaim dengan bukti, bangun argumen, uji argumenmu sebelum debat siswa, lalu kembangkan solusi.</p>
+          <h1 className="font-display font-semibold text-[clamp(28px,4vw,42px)] leading-[1.1] mb-4">Dari isu global<br />ke solusi nyata.</h1>
+          <p className="text-[#70758B] text-base leading-relaxed max-w-[60ch] mb-8">Eksplorasi isu SDGs, periksa klaim dengan bukti, bangun argumen, uji argumenmu sebelum debat siswa, lalu kembangkan solusi.</p>
           <Btn onClick={() => goTo(1)}>Mulai Eksplorasi</Btn>
         </div>
       );
@@ -1002,19 +1002,19 @@ export default function App() {
 
     if (stage === 'issue-bank') {
       return (
-        <div className="animate-[rise_0.35s_ease]">
+        <div className="animate-[rise_0.25s_ease]">
           <p className="font-mono text-xs tracking-wider text-[#0F766E] uppercase mb-2.5">01 — Issue Bank</p>
-          <h1 className="font-display font-semibold text-[clamp(28px,4vw,44px)] leading-[1.1] mb-4">Pilih satu isu SDGs</h1>
-          <p className="text-[#667270] text-base leading-relaxed max-w-[60ch] mb-8">Pilih satu dari 8 mosi pada Bank Mosi. Mosi yang dipilih menjadi konteks seluruh perjalanan.</p>
+          <h1 className="font-display font-semibold text-[clamp(28px,4vw,42px)] leading-[1.1] mb-4">Pilih satu isu SDGs</h1>
+          <p className="text-[#70758B] text-base leading-relaxed max-w-[60ch] mb-8">Pilih satu dari 8 mosi pada Bank Mosi. Mosi yang dipilih menjadi konteks seluruh perjalanan.</p>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
             {SAMPLE_ISSUES.map((issue) => (
-              <button key={issue.id} type="button" onClick={() => setSelectedIssue(issue)} className={`text-left h-full flex flex-col bg-white border rounded-[20px] p-[18px] cursor-pointer transition-all hover:-translate-y-0.5 hover:border-[#0F766E] ${selectedIssue?.id === issue.id ? 'border-[#D97757] bg-[#D97757]/10' : 'border-[#DDE7E4]'}`}>
+              <button key={issue.id} type="button" onClick={() => setSelectedIssue(issue)} className={`text-left h-full flex flex-col bg-white/90 border rounded-[20px] p-[18px] cursor-pointer transition-all hover:-translate-y-0.5 hover:border-[#0F766E] ${selectedIssue?.id === issue.id ? 'border-[#F2A93B]/60 bg-[#FFF8EC]/10' : 'border-[#E6E7EF]'}`}>
                 <div className="font-mono text-[11px] text-[#0F766E]">{issue.sdg}</div>
                 <h3 className="font-display text-base my-1.5">{issue.title}</h3>
-                <p className="text-[13px] text-[#667270] m-0 leading-relaxed flex-grow">{issue.blurb}</p>
-                <div className="mt-3 pt-3 border-t border-[#DDE7E4]/70">
-                  <div className="font-mono text-[10px] text-[#B4532F] uppercase tracking-wider mb-1">Mosi</div>
-                  <p className="text-[12px] text-[#1D2928] m-0 leading-relaxed">{issue.motion}</p>
+                <p className="text-[13px] text-[#70758B] m-0 leading-relaxed flex-grow">{issue.blurb}</p>
+                <div className="mt-3 pt-3 border-t border-[#E6E7EF]/70">
+                  <div className="font-mono text-[10px] text-[#B97819] uppercase tracking-wider mb-1">Mosi</div>
+                  <p className="text-[12px] text-[#1D2030] m-0 leading-relaxed">{issue.motion}</p>
                 </div>
               </button>
             ))}
@@ -1022,10 +1022,10 @@ export default function App() {
           <div className="mt-7">
             <div className="font-mono text-[11px] text-[#0F766E] uppercase tracking-wider mb-2">Posisi debat (sesuai hasil undian)</div>
             <div className="flex gap-3 flex-wrap">
-              <button type="button" onClick={() => setDebatePosition('PRO')} className={`px-5 py-3 rounded-full border font-semibold text-sm transition-all ${debatePosition === 'PRO' ? 'bg-[#0F766E] border-[#0F766E] text-white' : 'bg-transparent border-[#DDE7E4] text-[#1D2928] hover:border-[#A9B9B5]'}`}>PRO</button>
-              <button type="button" onClick={() => setDebatePosition('KONTRA')} className={`px-5 py-3 rounded-full border font-semibold text-sm transition-all ${debatePosition === 'KONTRA' ? 'bg-[#D97757] border-[#D97757] text-white' : 'bg-transparent border-[#DDE7E4] text-[#1D2928] hover:border-[#A9B9B5]'}`}>KONTRA</button>
+              <button type="button" onClick={() => setDebatePosition('PRO')} className={`px-5 py-3 rounded-full border font-semibold text-sm transition-all ${debatePosition === 'PRO' ? 'bg-[#0F766E] border-[#0F766E] text-ink' : 'bg-transparent border-[#E6E7EF] text-[#1D2030] hover:border-[#B8BAC8]'}`}>PRO</button>
+              <button type="button" onClick={() => setDebatePosition('KONTRA')} className={`px-5 py-3 rounded-full border font-semibold text-sm transition-all ${debatePosition === 'KONTRA' ? 'bg-[#FFF8EC] border-[#F2A93B]/60 text-ink' : 'bg-transparent border-[#E6E7EF] text-[#1D2030] hover:border-[#B8BAC8]'}`}>KONTRA</button>
             </div>
-            <p className="text-xs text-[#667270] mt-2">Gunakan posisi yang benar-benar diberikan kepada siswa; platform tidak menentukan pemenang.</p>
+            <p className="text-xs text-[#70758B] mt-2">Gunakan posisi yang benar-benar diberikan kepada siswa; platform tidak menentukan pemenang.</p>
           </div>
           <div className="flex gap-3 flex-wrap mt-7">
             <Btn onClick={() => goTo(2)} disabled={!selectedIssue || !debatePosition}>Lanjut ke AI Exploration →</Btn>
@@ -1036,13 +1036,13 @@ export default function App() {
 
     if (stage === 'ai-exploration') {
       return (
-        <div className="animate-[rise_0.35s_ease]">
+        <div className="animate-[rise_0.25s_ease]">
           <p className="font-mono text-xs tracking-wider text-[#0F766E] uppercase mb-2.5">02 — AI Exploration</p>
-          <h1 className="font-display font-semibold text-[clamp(28px,4vw,44px)] leading-[1.1] mb-4">Eksplorasi isu</h1>
-          <p className="text-[#667270] text-base leading-relaxed max-w-[68ch] mb-8">Isu: <strong>{selectedIssue?.title || '(belum dipilih)'}</strong><br />Mosi: <strong>{selectedIssue?.motion || '(belum ditentukan)'}</strong><br />Posisi: <strong>{debatePosition || '(belum ditentukan)'}</strong></p>
-          <div className="bg-white border border-[#DDE7E4] border-l-[3px] border-l-teal rounded-r-[20px] p-4 mb-6">
+          <h1 className="font-display font-semibold text-[clamp(28px,4vw,42px)] leading-[1.1] mb-4">Eksplorasi isu</h1>
+          <p className="text-[#70758B] text-base leading-relaxed max-w-[68ch] mb-8">Isu: <strong>{selectedIssue?.title || '(belum dipilih)'}</strong><br />Mosi: <strong>{selectedIssue?.motion || '(belum ditentukan)'}</strong><br />Posisi: <strong>{debatePosition || '(belum ditentukan)'}</strong></p>
+          <div className="bg-white/90 border border-[#E6E7EF] border-l-[3px] border-l-teal rounded-r-[14px] p-4 mb-6">
             <div className="font-mono text-[11px] text-[#0F766E] uppercase mb-1.5">AI · Explorer</div>
-            <p className="m-0 text-sm leading-relaxed text-[#1D2928] whitespace-pre-line">{explorerLoading ? 'AI sedang menyiapkan eksplorasi...' : explorerReply}</p>
+            <p className="m-0 text-sm leading-relaxed text-[#1D2030] whitespace-pre-line">{explorerLoading ? 'AI sedang menyiapkan eksplorasi...' : explorerReply}</p>
           </div>
           <InputField label="Catatan eksplorasimu" isTextarea value={exploration} onChange={(event) => setExploration(event.target.value)} placeholder="Tuliskan apa yang kamu pahami dan apa yang ingin kamu buktikan. Jangan sekadar menyalin jawaban AI." />
           <div className="flex gap-3 flex-wrap mt-7">
@@ -1055,18 +1055,18 @@ export default function App() {
 
     if (stage === 'fact-check') {
       return (
-        <div className="animate-[rise_0.35s_ease]">
+        <div className="animate-[rise_0.25s_ease]">
           <p className="font-mono text-xs tracking-wider text-[#0F766E] uppercase mb-2.5">03 — Fact Check</p>
-          <h1 className="font-display font-semibold text-[clamp(28px,4vw,44px)] leading-[1.1] mb-4">Periksa klaim dengan bukti</h1>
-          <p className="text-[#667270] text-base leading-relaxed max-w-[70ch] mb-4">Pada tahap ini siswa menguji klaim sebelum menggunakannya dalam argumen.</p>
+          <h1 className="font-display font-semibold text-[clamp(28px,4vw,42px)] leading-[1.1] mb-4">Periksa klaim dengan bukti</h1>
+          <p className="text-[#70758B] text-base leading-relaxed max-w-[70ch] mb-4">Pada tahap ini siswa menguji klaim sebelum menggunakannya dalam argumen.</p>
 
           {FACT_CHECK_MODE === 'dummy' && (
-            <div className="bg-[#D97757]/10 border border-[#D97757]/20 rounded-[12px] p-3 mb-6 text-sm leading-relaxed text-[#1D2928]">
+            <div className="bg-[#FFF8EC]/10 border border-[#F2A93B]/60/20 rounded-[12px] p-3 mb-6 text-sm leading-relaxed text-[#1D2030]">
               <strong>MODE SIMULASI:</strong> hasil belum merupakan verifikasi web nyata. Gunakan tahap ini untuk menguji alur klaim → verdict → sumber → Argument Builder.
             </div>
           )}
           {FACT_CHECK_MODE === 'source-pack' && (
-            <div className="bg-[#0F766E]/10 border border-[#0F766E]/20 rounded-[12px] p-3 mb-6 text-sm leading-relaxed text-[#1D2928]">
+            <div className="bg-[#0F766E]/10 border border-[#0F766E]/20 rounded-[12px] p-3 mb-6 text-sm leading-relaxed text-[#1D2030]">
               <strong>MODE SOURCE PACK:</strong> AI menilai klaim terhadap sumber yang disiapkan untuk mosi, bukan melakukan web search otomatis.
             </div>
           )}
@@ -1076,26 +1076,26 @@ export default function App() {
             <Btn secondary onClick={() => setClaims([])} disabled={factCheckLoading || claims.length === 0}>Bersihkan hasil</Btn>
           </div>
 
-          <div className="bg-white border border-[#DDE7E4] rounded-[20px] p-4 mb-6">
+          <div className="bg-white/90 border border-[#E6E7EF] rounded-[20px] p-4 mb-6">
             <div className="font-mono text-[11px] text-[#0F766E] uppercase mb-2">Tambah klaim spesifik</div>
             <div className="flex gap-3 items-start flex-wrap">
-              <textarea value={draftClaim} onChange={(event) => setDraftClaim(event.target.value)} placeholder="Tulis satu klaim yang bisa diperiksa." className="flex-1 min-w-[260px] bg-[#F6FAF8] border border-[#DDE7E4] rounded-[16px] text-[#1D2928] font-body text-sm p-3.5 resize-y min-h-[90px] focus:outline focus:outline-2 focus:outline-[#0F766E] focus:outline-offset-2" />
+              <textarea value={draftClaim} onChange={(event) => setDraftClaim(event.target.value)} placeholder="Tulis satu klaim yang bisa diperiksa." className="flex-1 min-w-[260px] bg-[#F6F7FB] border border-[#E6E7EF] rounded-[16px] text-[#1D2030] font-body text-sm p-3.5 resize-y min-h-[90px] focus:outline focus:outline-2 focus:outline-[#0F766E] focus:outline-offset-2" />
               <Btn secondary onClick={addAndCheckClaim} disabled={!draftClaim.trim() || recheckingId !== null}>Periksa klaim</Btn>
             </div>
           </div>
 
           {factCheckError && (
-            <div className="bg-coral/10 border border-coral/30 text-[#1D2928] rounded-[12px] p-4 mb-5 text-sm leading-relaxed">
+            <div className="bg-coral/10 border border-coral/30 text-[#1D2030] rounded-[12px] p-4 mb-5 text-sm leading-relaxed">
               <strong>Fact check belum dapat dilakukan:</strong> {factCheckError}
             </div>
           )}
 
           {factCheckLoading && (
-            <div className="bg-white border border-[#DDE7E4] rounded-[20px] p-4 mb-4"><p className="text-[#667270] font-mono text-xs m-0">Memeriksa klaim...</p></div>
+            <div className="bg-white/90 border border-[#E6E7EF] rounded-[20px] p-4 mb-4"><p className="text-[#70758B] font-mono text-xs m-0">Memeriksa klaim...</p></div>
           )}
 
           {!factCheckLoading && claims.length === 0 && !factCheckError && (
-            <div className="bg-white border border-dashed border-[#DDE7E4] rounded-[20px] p-5 text-[#667270] text-sm">Belum ada hasil. Jalankan Fact Check untuk memulai.</div>
+            <div className="bg-white/90 border border-dashed border-[#E6E7EF] rounded-[20px] p-5 text-[#70758B] text-sm">Belum ada hasil. Jalankan Fact Check untuk memulai.</div>
           )}
 
           <div className="space-y-3">
@@ -1103,47 +1103,47 @@ export default function App() {
               const meta = verdictMeta[claim.verdict];
               const isRechecking = recheckingId === claim.id;
               return (
-                <article key={claim.id} className="bg-white border border-[#DDE7E4] rounded-[20px] p-4">
+                <article key={claim.id} className="bg-white/90 border border-[#E6E7EF] rounded-[20px] p-4">
                   <div className="flex gap-3 items-start justify-between flex-wrap">
                     <div className="flex gap-2 items-center flex-wrap">
                       <span className={`font-mono text-[10px] px-2 py-1 rounded-full whitespace-nowrap uppercase ${meta.color}`}>{meta.label}</span>
-                      <span className="font-mono text-[10px] px-2 py-1 rounded-full bg-[#667270]/10 text-[#667270] uppercase">{claim.type}</span>
-                      <span className="font-mono text-[10px] text-[#667270]">Confidence {claim.confidence}%</span>
+                      <span className="font-mono text-[10px] px-2 py-1 rounded-full bg-slate/10 text-[#70758B] uppercase">{claim.type}</span>
+                      <span className="font-mono text-[10px] text-[#70758B]">Confidence {claim.confidence}%</span>
                     </div>
                     <Btn secondary onClick={() => recheckClaim(claim)} disabled={isRechecking}>{isRechecking ? 'Memeriksa...' : 'Periksa ulang'}</Btn>
                   </div>
                   <h3 className="font-display text-base mt-3 mb-2">{claim.claim}</h3>
-                  <p className="text-sm leading-relaxed text-[#1D2928] m-0">{claim.explanation}</p>
-                  {claim.caveat && <div className="bg-[#D97757]/10 border border-[#D97757]/20 rounded-[16px] p-3 mt-3 text-sm leading-relaxed"><strong>Catatan konteks:</strong> {claim.caveat}</div>}
+                  <p className="text-sm leading-relaxed text-[#1D2030] m-0">{claim.explanation}</p>
+                  {claim.caveat && <div className="bg-[#FFF8EC]/10 border border-[#F2A93B]/60/20 rounded-[16px] p-3 mt-3 text-sm leading-relaxed"><strong>Catatan konteks:</strong> {claim.caveat}</div>}
                   {claim.sources.length > 0 && (
                     <div className="mt-4">
-                      <div className="font-mono text-[10px] text-[#0F766E] uppercase tracking-[0.16em] mb-2">{FACT_CHECK_MODE === 'dummy' ? 'Referensi simulasi' : 'Referensi source pack'}</div>
+                      <div className="font-mono text-[10px] text-[#0F766E] uppercase mb-2">{FACT_CHECK_MODE === 'dummy' ? 'Referensi simulasi' : 'Referensi source pack'}</div>
                       <div className="space-y-2">
                         {claim.sources.map((source) => (
-                          <a key={`${claim.id}-${source.url}`} href={source.url} target="_blank" rel="noreferrer" className="block bg-[#F6FAF8] border border-[#DDE7E4] rounded-[16px] p-3 hover:border-[#0F766E] transition-colors">
-                            <div className="font-mono text-[10px] text-[#667270] uppercase">{qualityLabel[source.quality]} · {source.domain}{source.year ? ` · ${source.year}` : ''}{source.scope ? ` · ${source.scope}` : ''}</div>
-                            <div className="text-sm text-[#1D2928] mt-1">{source.title}</div>
-                            {source.summary && <div className="text-xs text-[#667270] mt-1 leading-relaxed">{source.summary}</div>}
+                          <a key={`${claim.id}-${source.url}`} href={source.url} target="_blank" rel="noreferrer" className="block bg-[#F6F7FB] border border-[#E6E7EF] rounded-[16px] p-3 hover:border-[#0F766E] transition-colors">
+                            <div className="font-mono text-[10px] text-[#70758B] uppercase">{qualityLabel[source.quality]} · {source.domain}{source.year ? ` · ${source.year}` : ''}{source.scope ? ` · ${source.scope}` : ''}</div>
+                            <div className="text-sm text-[#1D2030] mt-1">{source.title}</div>
+                            {source.summary && <div className="text-xs text-[#70758B] mt-1 leading-relaxed">{source.summary}</div>}
                             <div className="text-[11px] text-[#0F766E] break-all mt-1">{source.url}</div>
                           </a>
                         ))}
                       </div>
                     </div>
                   )}
-                  {claim.searchQueries.length > 0 && <div className="mt-3 font-mono text-[10px] text-[#667270]">Query simulasi: {claim.searchQueries.join(' · ')}</div>}
+                  {claim.searchQueries.length > 0 && <div className="mt-3 font-mono text-[10px] text-[#70758B]">Query simulasi: {claim.searchQueries.join(' · ')}</div>}
                 </article>
               );
             })}
           </div>
 
           {claims.length > 0 && (
-            <div className="mt-5 bg-white border border-[#DDE7E4] rounded-[20px] p-4">
+            <div className="mt-5 bg-white/90 border border-[#E6E7EF] rounded-[20px] p-4">
               <div className="flex gap-4 flex-wrap text-sm">
                 <span><strong>{claims.length}</strong> klaim diperiksa</span>
                 <span><strong>{verifiedClaims.length}</strong> bisa dipakai</span>
                 <span><strong>{blockingClaims.length}</strong> perlu diperbaiki</span>
               </div>
-              {FACT_CHECK_MODE === 'dummy' && <p className="text-xs text-[#667270] mt-3 mb-0">Mode simulasi hanya untuk pengujian alur. Jangan gunakan verdict dummy sebagai bukti debat.</p>}
+              {FACT_CHECK_MODE === 'dummy' && <p className="text-xs text-[#70758B] mt-3 mb-0">Mode simulasi hanya untuk pengujian alur. Jangan gunakan verdict dummy sebagai bukti debat.</p>}
             </div>
           )}
 
@@ -1157,19 +1157,19 @@ export default function App() {
 
     if (stage === 'argument-builder') {
       return (
-        <div className="animate-[rise_0.35s_ease]">
+        <div className="animate-[rise_0.25s_ease]">
           <p className="font-mono text-xs tracking-wider text-[#0F766E] uppercase mb-2.5">04 — Argument Builder</p>
-          <h1 className="font-display font-semibold text-[clamp(28px,4vw,44px)] leading-[1.1] mb-4">Susun argumenmu</h1>
-          <p className="text-[#667270] text-base leading-relaxed max-w-[60ch] mb-6">Gunakan struktur klaim → alasan → bukti.</p>
+          <h1 className="font-display font-semibold text-[clamp(28px,4vw,42px)] leading-[1.1] mb-4">Susun argumenmu</h1>
+          <p className="text-[#70758B] text-base leading-relaxed max-w-[60ch] mb-6">Gunakan struktur klaim → alasan → bukti.</p>
 
           {verifiedClaims.length > 0 && (
-            <div className="bg-white border border-[#DDE7E4] rounded-[20px] p-4 mb-5">
-              <div className="font-mono text-[10px] text-[#0F766E] uppercase tracking-[0.16em] mb-2">Klaim yang lolos fact check</div>
+            <div className="bg-white/90 border border-[#E6E7EF] rounded-[20px] p-4 mb-5">
+              <div className="font-mono text-[10px] text-[#0F766E] uppercase mb-2">Klaim yang lolos fact check</div>
               <div className="space-y-2">
                 {verifiedClaims.map((claim) => (
-                  <button key={claim.id} type="button" onClick={() => selectClaimForArgument(claim)} className="block text-left w-full bg-[#F6FAF8] border border-[#DDE7E4] rounded-[16px] p-3 text-sm hover:border-[#0F766E]">
-                    <span className="text-[#1D2928]">{claim.claim}</span>
-                    <span className="block text-[11px] text-[#667270] mt-1">{claim.sources.length} sumber referensi</span>
+                  <button key={claim.id} type="button" onClick={() => selectClaimForArgument(claim)} className="block text-left w-full bg-[#F6F7FB] border border-[#E6E7EF] rounded-[16px] p-3 text-sm hover:border-[#0F766E]">
+                    <span className="text-[#1D2030]">{claim.claim}</span>
+                    <span className="block text-[11px] text-[#70758B] mt-1">{claim.sources.length} sumber referensi</span>
                   </button>
                 ))}
               </div>
@@ -1182,11 +1182,11 @@ export default function App() {
 
           <div className="flex gap-3 flex-wrap mt-7 mb-4"><Btn secondary onClick={getReview} disabled={!canReviewArgument || reviewLoading}>{reviewLoading ? 'Mereview...' : 'Minta review AI'}</Btn></div>
 
-          {!canReviewArgument && <p className="text-xs text-[#667270] mt-2">Lengkapi klaim, alasan, dan bukti sebelum meminta review.</p>}
+          {!canReviewArgument && <p className="text-xs text-[#70758B] mt-2">Lengkapi klaim, alasan, dan bukti sebelum meminta review.</p>}
           {review && !reviewLoading && (
-            <div className="bg-white border border-[#DDE7E4] border-l-[3px] border-l-teal rounded-r-[20px] p-4 mt-4">
+            <div className="bg-white/90 border border-[#E6E7EF] border-l-[3px] border-l-teal rounded-r-[14px] p-4 mt-4">
               <div className="font-mono text-[11px] text-[#0F766E] uppercase mb-1.5">AI · Reviewer {ARGUMENT_REVIEW_MODE === 'api' ? '· API' : '· Simulasi'}</div>
-              <p className="m-0 text-sm leading-relaxed text-[#1D2928] whitespace-pre-wrap">{review}</p>
+              <p className="m-0 text-sm leading-relaxed text-[#1D2030] whitespace-pre-wrap">{review}</p>
             </div>
           )}
 
@@ -1200,10 +1200,10 @@ export default function App() {
 
     if (stage === 'debate') {
       return (
-        <div className="animate-[rise_0.35s_ease]">
+        <div className="animate-[rise_0.25s_ease]">
           <p className="font-mono text-xs tracking-wider text-[#0F766E] uppercase mb-2.5">05 — Debate Preparation</p>
-          <h1 className="font-display font-semibold text-[clamp(28px,4vw,44px)] leading-[1.1] mb-4">Uji argumenmu</h1>
-          <p className="text-[#667270] text-base leading-relaxed max-w-[65ch] mb-6">AI di sini hanya sebagai sparring partner sebelum debat. Debat resmi tetap dilakukan siswa PRO dan KONTRA.</p>
+          <h1 className="font-display font-semibold text-[clamp(28px,4vw,42px)] leading-[1.1] mb-4">Uji argumenmu</h1>
+          <p className="text-[#70758B] text-base leading-relaxed max-w-[65ch] mb-6">AI di sini hanya sebagai sparring partner sebelum debat. Debat resmi tetap dilakukan siswa PRO dan KONTRA.</p>
 
           <div className="flex items-center gap-2 mb-4">
             <span className="font-mono text-[10px] text-[#0F766E] uppercase">Sparring {sparringRound}/3</span>
@@ -1212,20 +1212,20 @@ export default function App() {
 
           <div className="flex flex-col gap-2.5 mt-4">
             {debateLog.map((message, index) => (
-              <div key={index} className={`max-w-[85%] p-3 rounded-[20px] text-sm leading-relaxed break-words ${message.who === 'ai' ? 'bg-white border border-[#DDE7E4] self-start rounded-bl-sm' : 'bg-[#0F766E] text-white self-end rounded-br-sm'}`}>
-                {message.text === 'mengetik...' ? <span className="text-[#667270] font-mono text-xs">mengetik...</span> : message.text}
+              <div key={index} className={`max-w-[85%] p-3 rounded-[20px] text-sm leading-relaxed break-words ${message.who === 'ai' ? 'bg-white/90 border border-[#E6E7EF] self-start rounded-bl-sm' : 'bg-[#0F766E] text-ink self-end rounded-br-sm'}`}>
+                {message.text === 'mengetik...' ? <span className="text-[#70758B] font-mono text-xs">mengetik...</span> : message.text}
               </div>
             ))}
           </div>
 
           {sparringRound < 3 && (
             <div className="flex gap-3 items-center mt-7 flex-wrap">
-              <input type="text" value={debateInput} onChange={(event) => setDebateInput(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && sendDebateMessage()} placeholder="Tulis responsmu..." className="flex-1 min-w-[200px] bg-white border border-[#DDE7E4] rounded-[16px] text-[#1D2928] font-body text-sm p-3.5 focus:outline-[#0F766E]" />
+              <input type="text" value={debateInput} onChange={(event) => setDebateInput(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && sendDebateMessage()} placeholder="Tulis responsmu..." className="flex-1 min-w-[200px] bg-white/90 border border-[#E6E7EF] rounded-[16px] text-[#1D2030] font-body text-sm p-3.5 focus:outline-[#0F766E]" />
               <Btn onClick={sendDebateMessage} disabled={!debateInput.trim() || debateLoading}>{debateLoading ? 'Menilai...' : 'Kirim'}</Btn>
             </div>
           )}
 
-          <div className="bg-white border border-[#DDE7E4] rounded-[12px] p-3 mt-6 text-xs text-[#667270] leading-relaxed">Batas sparring adalah 3 ronde agar AI tidak terus-menerus menantang tanpa akhir.</div>
+          <div className="bg-white/90 border border-[#E6E7EF] rounded-[12px] p-3 mt-6 text-xs text-[#70758B] leading-relaxed">Batas sparring adalah 3 ronde agar AI tidak terus-menerus menantang tanpa akhir.</div>
 
           <div className="flex gap-3 flex-wrap mt-7">
             <Btn secondary onClick={() => goTo(4)}>← Kembali</Btn>
@@ -1237,15 +1237,15 @@ export default function App() {
 
     if (stage === 'solution-lab') {
       return (
-        <div className="animate-[rise_0.35s_ease]">
+        <div className="animate-[rise_0.25s_ease]">
           <p className="font-mono text-xs tracking-wider text-[#0F766E] uppercase mb-2.5">06 — Solution Lab</p>
-          <h1 className="font-display font-semibold text-[clamp(28px,4vw,44px)] leading-[1.1] mb-4">Rancang solusimu</h1>
+          <h1 className="font-display font-semibold text-[clamp(28px,4vw,42px)] leading-[1.1] mb-4">Rancang solusimu</h1>
           <InputField label="Rancangan solusi" isTextarea value={solution} onChange={(event) => setSolution(event.target.value)} placeholder="Jelaskan solusi konkretmu, siapa yang terlibat, dan bagaimana mengukur keberhasilannya." />
           <div className="flex gap-3 flex-wrap mt-7 mb-4"><Btn secondary onClick={getSolutionEvaluation} disabled={!solution.trim() || evalLoading}>{evalLoading ? 'Mengevaluasi...' : 'Evaluasi kelayakan'}</Btn></div>
           {evalReply && !evalLoading && (
-            <div className="bg-white border border-[#DDE7E4] border-l-[3px] border-l-teal rounded-r-[20px] p-4 mt-4">
+            <div className="bg-white/90 border border-[#E6E7EF] border-l-[3px] border-l-teal rounded-r-[14px] p-4 mt-4">
               <div className="font-mono text-[11px] text-[#0F766E] uppercase mb-1.5">AI · Evaluator {SOLUTION_EVALUATOR_MODE === 'api' ? '· API' : '· Simulasi'}</div>
-              <p className="m-0 text-sm leading-relaxed text-[#1D2928] whitespace-pre-wrap">{evalReply}</p>
+              <p className="m-0 text-sm leading-relaxed text-[#1D2030] whitespace-pre-wrap">{evalReply}</p>
             </div>
           )}
           <div className="flex gap-3 flex-wrap mt-7">
@@ -1257,10 +1257,10 @@ export default function App() {
     }
 
     return (
-      <div className="animate-[rise_0.35s_ease]">
+      <div className="animate-[rise_0.25s_ease]">
         <p className="font-mono text-xs tracking-wider text-[#0F766E] uppercase mb-2.5">07 — Impact</p>
-        <h1 className="font-display font-semibold text-[clamp(28px,4vw,44px)] leading-[1.1] mb-4">Perjalananmu</h1>
-        <p className="text-[#667270] text-base leading-relaxed max-w-[65ch] mb-7">Ringkasan akhir perjalananmu dari isu, klaim, argumen, uji argumen, sampai solusi.</p>
+        <h1 className="font-display font-semibold text-[clamp(28px,4vw,42px)] leading-[1.1] mb-4">Perjalananmu</h1>
+        <p className="text-[#70758B] text-base leading-relaxed max-w-[65ch] mb-7">Ringkasan akhir perjalananmu dari isu, klaim, argumen, uji argumen, sampai solusi.</p>
 
         <div className="space-y-4">
           <div role="status">
@@ -1283,7 +1283,7 @@ export default function App() {
           <SummaryCard label="Evaluasi Solusi" value={evalReply || '-'} />
         </div>
 
-        <div className="bg-white border border-[#DDE7E4] rounded-[20px] p-4 mt-5 text-sm text-[#1D2928]">
+        <div className="bg-white/90 border border-[#E6E7EF] rounded-[20px] p-4 mt-5 text-sm text-[#1D2030]">
           <strong>Catatan:</strong> debat resmi tetap dilakukan antara siswa PRO dan KONTRA. Sparring AI pada tahap 05 hanya membantu menguji argumen sebelum debat.
         </div>
 
@@ -1309,42 +1309,127 @@ export default function App() {
   }
 
   return (
-    <div className="grid grid-cols-[88px_1fr] min-h-screen max-md:grid-cols-1 bg-[#F6FAF8] text-[#1D2928]">
-      <nav className="relative border-r border-[#DDE7E4] bg-white flex flex-col items-center pt-7 pb-7 max-md:fixed max-md:bottom-0 max-md:left-0 max-md:right-0 max-md:top-auto max-md:w-full max-md:h-[76px] max-md:flex-row max-md:px-3 max-md:py-0 max-md:border-t max-md:border-r-0 max-md:overflow-x-auto max-md:bg-white max-md:z-[100] max-md:shadow-[0_-8px_24px_rgba(15,118,110,0.10)]">
-        <div className="relative flex flex-col items-center gap-0.5 w-full max-md:w-max max-md:flex-row max-md:h-full max-md:items-center">
-          <div className="absolute left-1/2 top-[20px] bottom-[20px] w-[2px] bg-line -translate-x-1/2 z-[0] max-md:hidden" />
-          <div className="absolute left-1/2 top-[20px] w-[2px] bg-gradient-to-b from-[#0F766E] to-[#D97757] -translate-x-1/2 z-[1] transition-[height] duration-400 ease-[ease] max-md:hidden" style={{ height: `calc((100% - 40px) * ${furthestStage / (STAGES.length - 1 || 1)})` }} />
-          {STAGES.map((stage, index) => {
-            const isActive = index === currentStage;
-            const isDone = index < furthestStage;
-            return (
-              <button key={stage.id} type="button" onClick={() => goTo(index)} className={`relative z-[2] w-10 h-10 shrink-0 rounded-full border flex items-center justify-center font-mono text-xs cursor-pointer m-0 transition-all duration-200 group max-md:flex-[0_0_40px] max-md:mx-2 ${isActive ? 'bg-[#0F766E] border-[#0F766E] text-white font-semibold shadow-[0_8px_22px_rgba(15,118,110,0.16)]' : isDone ? 'bg-white border-[#D97757] text-[#B4532F]' : 'bg-white border-[#DDE7E4] text-[#667270]'}`}>
-                {stage.short}
-                <span className="absolute left-14 top-1/2 -translate-y-1/2 bg-white border border-[#DDE7E4] px-2.5 py-1.5 rounded-lg font-body text-xs whitespace-nowrap opacity-0 pointer-events-none transition-opacity duration-150 group-hover:opacity-100 max-md:hidden text-[#1D2928] font-normal">{stage.label}</span>
-              </button>
-            );
-          })}
+    <div className="min-h-screen bg-[#F6F7FB] text-[#1D2030]">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-32 -right-24 h-80 w-80 rounded-full bg-[#0F766E]/8 blur-3xl" />
+        <div className="absolute bottom-0 -left-24 h-72 w-72 rounded-full bg-[#F2A93B]/8 blur-3xl" />
+      </div>
+
+      <aside className="fixed left-0 bottom-0 top-[var(--team-topbar-height,74px)] z-50 w-[232px] border-r border-[#E6E7EF] bg-white/92 backdrop-blur-xl px-5 py-6 shadow-[8px_0_30px_rgba(30,32,48,0.04)] max-lg:w-[205px] max-md:left-3 max-md:right-3 max-md:bottom-3 max-md:top-auto max-md:w-auto max-md:h-[74px] max-md:px-3 max-md:py-0 max-md:border max-md:rounded-[20px] max-md:shadow-[0_16px_36px_rgba(30,32,48,0.12)]">
+        <div className="flex h-full flex-col max-md:flex-row max-md:items-center max-md:gap-2">
+          <div className="mb-7 flex items-center gap-3 max-md:mb-0 max-md:mr-2 max-md:shrink-0">
+            <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-[#0F766E] text-white shadow-[0_10px_24px_rgba(15,118,110,0.20)]">
+              <span className="font-display text-base font-bold">AI</span>
+            </div>
+            <div className="min-w-0 max-md:hidden">
+              <div className="font-display text-sm font-semibold tracking-[-0.01em]">AI × SDGs</div>
+              <div className="mt-0.5 text-[11px] text-[#8A8EA2]">Source Pack Mode</div>
+            </div>
+          </div>
+
+          <div className="mb-6 rounded-[18px] bg-[#EFF9F7] px-4 py-3.5 max-md:hidden">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#0F766E]">Source Pack</span>
+              <span className="h-2 w-2 rounded-full bg-[#0F766E] shadow-[0_0_0_4px_rgba(15,118,110,0.10)]" />
+            </div>
+            <p className="mt-2 text-[11px] leading-5 text-[#73778D]">Gunakan paket sumber terkurasi untuk eksplorasi, fact-check, dan penyusunan argumen.</p>
+          </div>
+
+          <div className="hidden border-t border-[#E6E7EF] pt-4 max-md:flex max-md:flex-1 max-md:gap-1 max-md:overflow-x-auto max-md:border-t-0 max-md:pt-0">
+            {STAGES.map((stage, index) => {
+              const isActive = index === currentStage;
+              const isDone = index < furthestStage;
+              return (
+                <button
+                  key={stage.id}
+                  type="button"
+                  onClick={() => goTo(index)}
+                  className={`flex h-10 min-w-10 shrink-0 items-center justify-center rounded-[14px] border px-3 font-mono text-[10px] font-semibold transition-all ${isActive ? 'border-[#0F766E] bg-[#0F766E] text-white shadow-[0_8px_18px_rgba(15,118,110,0.20)]' : isDone ? 'border-[#F2A93B]/60 bg-[#FFF8EC] text-[#B97819]' : 'border-[#E6E7EF] bg-white text-[#7B7F93]'}`}
+                  aria-label={stage.label}
+                >
+                  {stage.short}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1 max-md:hidden">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8A8EA2]">Perjalanan</span>
+              <span className="text-[10px] font-semibold text-[#0F766E]">{Math.round((furthestStage / (STAGES.length - 1 || 1)) * 100)}%</span>
+            </div>
+            <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-[#EEF0F5]">
+              <div className="h-full rounded-full bg-[#0F766E] transition-all duration-300" style={{ width: `${(furthestStage / (STAGES.length - 1 || 1)) * 100}%` }} />
+            </div>
+            <div className="space-y-1.5">
+              {STAGES.map((stage, index) => {
+                const isActive = index === currentStage;
+                const isDone = index < furthestStage;
+                return (
+                  <button
+                    key={stage.id}
+                    type="button"
+                    onClick={() => goTo(index)}
+                    className={`group flex w-full items-center gap-3 rounded-[14px] px-3 py-2.5 text-left transition-all ${isActive ? 'bg-[#E8F6F4] text-[#0B665F]' : 'text-[#70758B] hover:bg-[#F8F8FC] hover:text-[#303246]'}`}
+                  >
+                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] border font-mono text-[9px] font-semibold ${isActive ? 'border-[#0F766E] bg-[#0F766E] text-white' : isDone ? 'border-[#F2A93B]/50 bg-[#FFF8EC] text-[#B97819]' : 'border-[#E6E7EF] bg-white text-[#8A8EA2]'}`}>
+                      {stage.short}
+                    </span>
+                    <span className="truncate text-xs font-medium">{stage.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-auto max-md:hidden">
+            <div className="border-t border-[#E6E7EF] pt-4 text-[10px] leading-5 text-[#9A9DAF]">
+              Tetap pada mosi yang dipilih. Source Pack menjadi dasar bukti sebelum debat.
+            </div>
+          </div>
         </div>
-      </nav>
-      <main className="py-14 px-16 max-w-[1120px] max-md:py-8 max-md:px-5 max-md:pb-[120px]">
-        {renderPanel()}
+      </aside>
+
+      <main className="relative min-h-screen pl-[232px] max-lg:pl-[205px] max-md:pl-0 max-md:pb-[104px]">
+        <div className="mx-auto w-full max-w-[1120px] px-9 py-8 max-lg:px-7 max-md:px-4 max-md:pt-5">
+          <header className="mb-8 flex items-center justify-between gap-4 rounded-[22px] border border-[#E6E7EF] bg-white/85 px-5 py-4 shadow-[0_10px_28px_rgba(30,32,48,0.04)] backdrop-blur max-md:mb-5 max-md:px-4 max-md:py-3.5">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-display text-sm font-semibold tracking-[-0.01em]">AI × SDGs Platform</span>
+                <span className="hidden h-1 w-1 rounded-full bg-[#C7C9D4] sm:block" />
+                <span className="hidden text-[11px] font-medium text-[#8A8EA2] sm:block">Source Pack</span>
+              </div>
+              <div className="mt-1 truncate text-[11px] text-[#8A8EA2]">
+                {selectedIssue ? selectedIssue.title : 'Eksplorasi isu berbasis Source Pack'}
+                {debatePosition ? ` · ${debatePosition}` : ''}
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <div className="hidden rounded-full border border-[#E6E7EF] bg-[#FAFAFC] px-3 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-[#777B90] sm:block">Source Pack</div>
+              <div className="rounded-full bg-[#0F766E] px-3.5 py-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-white shadow-[0_6px_14px_rgba(15,118,110,0.18)]">Tahap {String(currentStage).padStart(2,'0')}</div>
+            </div>
+          </header>
+
+          {renderPanel()}
+        </div>
       </main>
     </div>
   );
+
 }
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border border-[#DDE7E4] rounded-[20px] p-4 bg-white/90">
-      <div className="font-mono text-[10px] text-[#0F766E] uppercase tracking-[0.16em] mb-2">{label}</div>
-      <div className="text-[13px] leading-6 whitespace-pre-wrap break-words text-[#303B3A]">{value}</div>
+    <div className="border border-[#E6E7EF] rounded-[20px] p-4 bg-gradient-to-br from-[#0F766E]/10 to-[#F2A93B]/5">
+      <div className="font-mono text-[10px] text-[#0F766E] uppercase mb-2">{label}</div>
+      <div className="text-sm leading-relaxed whitespace-pre-wrap break-words text-[#1D2030]">{value}</div>
     </div>
   );
 }
 
 function Btn({ children, onClick, secondary, disabled }: { children: ReactNode; onClick?: () => void; secondary?: boolean; disabled?: boolean }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} className={`font-body font-semibold text-sm px-5 py-2.5 rounded-[16px] transition-all whitespace-nowrap ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:-translate-y-px'} ${secondary ? 'bg-white text-[#394847] border border-[#DDE7E4] hover:border-[#A9B9B5] hover:bg-[#FAFCFB]' : 'bg-[#0F766E] text-white hover:bg-[#0B625C] shadow-[0_8px_22px_rgba(15,118,110,0.16)]'}`}>
+    <button type="button" onClick={onClick} disabled={disabled} className={`font-body font-semibold text-sm px-5 py-2.5 rounded-[16px] transition-all whitespace-nowrap ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:-translate-y-px'} ${secondary ? 'bg-white text-[#3A3D4E] border border-[#E6E7EF] hover:border-[#B8BAC8] hover:bg-[#FAFAFC]' : 'bg-[#0F766E] text-white hover:bg-[#0C655F] shadow-[0_8px_22px_rgba(15,118,110,0.16)]'}`}>
       {children}
     </button>
   );
@@ -1365,11 +1450,11 @@ function InputField({
 }) {
   return (
     <div className="mb-4 w-full">
-      <label className="font-mono text-[10px] text-[#667270] uppercase tracking-[0.16em] block mb-2 mt-6">{label}</label>
+      <label className="font-mono text-[10px] text-[#70758B] uppercase tracking-[0.16em] block mb-2 mt-6">{label}</label>
       {isTextarea ? (
-        <textarea value={value} onChange={onChange} placeholder={placeholder} className="w-full bg-white border border-[#DDE7E4] rounded-[16px] text-[#1D2928] font-body text-sm px-4 py-3.5 resize-y min-h-[104px] transition-colors focus:outline focus:outline-2 focus:outline-[#0F766E] focus:outline-offset-2 focus:border-[#0F766E]/50 placeholder:text-[#9AA7A4]" />
+        <textarea value={value} onChange={onChange} placeholder={placeholder} className="w-full bg-white/90 border border-[#E6E7EF] rounded-[16px] text-[#1D2030] font-body text-sm px-4 py-3.5 resize-y min-h-[104px] transition-colors focus:outline focus:outline-2 focus:outline-[#0F766E] focus:outline-offset-2 focus:border-[#0F766E]/50 placeholder:text-[#9A9DAF]" />
       ) : (
-        <input type="text" value={value} onChange={onChange} placeholder={placeholder} className="w-full bg-white border border-[#DDE7E4] rounded-[16px] text-[#1D2928] font-body text-sm px-4 py-3 min-h-[50px] transition-colors focus:outline focus:outline-2 focus:outline-[#0F766E] focus:outline-offset-2 focus:border-[#0F766E]/50 placeholder:text-[#9AA7A4]" />
+        <input type="text" value={value} onChange={onChange} placeholder={placeholder} className="w-full bg-white/90 border border-[#E6E7EF] rounded-[16px] text-[#1D2030] font-body text-sm px-4 py-3 min-h-[50px] transition-colors focus:outline focus:outline-2 focus:outline-[#0F766E] focus:outline-offset-2 focus:border-[#0F766E]/50 placeholder:text-[#9A9DAF]" />
       )}
     </div>
   );
